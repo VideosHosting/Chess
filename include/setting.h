@@ -1,11 +1,18 @@
 #ifndef SETTING_H
 #define SETTING_H
 
-extern const int Width;
-extern const int Height;
-extern const int DIM_X;
-extern const int DIM_Y;
-extern const int ROW;
-extern const int COL;
+#define ImagesPath "Assets/Images/"
 
-#endif
+#define Width 800
+#define Height 800
+
+#define DIM_X 8
+#define DIM_Y 8
+
+#define ROW_SIZE (Height / DIM_Y)
+#define COL_SIZE (Width / DIM_X)
+
+#define STARTING_POSITION "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+
+#endif // SETTING_H
