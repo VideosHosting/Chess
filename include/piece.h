@@ -4,13 +4,13 @@
 
 
 typedef enum PieceType {
-    PIECE_NONE,
-    PAWN,
-    ROOK,
-    KNIGHT,
-    BISHOP,
-    QUEEN,
-    KING
+    PIECE_NONE = 0,
+    PAWN = 'p',
+    ROOK = 'r',
+    KNIGHT = 'n',
+    BISHOP = 'b',
+    QUEEN = 'q',
+    KING = 'k'
 } PieceType_t;
 
 typedef enum PieceColor {

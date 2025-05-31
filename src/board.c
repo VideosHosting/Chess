@@ -74,7 +74,7 @@ static PieceType_t GetPieceTypeByLetter(char c) {
 
 //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 static void loadFen(const char* fen, Board_t* board) {
-    SDL_Log("Loading FEN: %s", STARTING_POSITION);
+    SDL_Log("Loading FEN: %s", fen);
     int row = 0, col = 0;
 
 
@@ -143,12 +143,12 @@ void printBoard(Board_t* board) {
 
     for(int i = 0; i < DIM_Y; i++) {
         for(int j = 0; j < DIM_X; j++) {
-            // Piece_t* piece = getPiece(board, i, j);
             Piece_t* piece = &board->pieces[i * DIM_X + j];
             if(piece->type == PIECE_NONE) {
                 printf(". ");
             } else {
-                printf("%c ", (piece->color == WHITE) ? piece->type + 'A' : piece->type + 'a');
+
+                printf("%c ", (piece->color == WHITE) ? SDL_toupper(piece->type) : piece->type);
             }
         }
         printf("\n");
@@ -169,12 +169,22 @@ Piece_t* getPiece(Board_t* board, int row, int col) {
 void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol) {
     Piece_t* nPiece = &board->pieces[nrow * DIM_X + ncol];
 
+    // Free texture if capturing
+    if(nPiece->texture && nPiece->texture != piece->texture) {
+        freePieceTexture(nPiece);
+    }
+
     nPiece->texture = piece->texture;
     nPiece->color = piece->color;
     nPiece->type = piece->type;
+    nPiece->x = ncol;
+    nPiece->y = nrow;
 
     piece->texture = NULL;
     piece->type = PIECE_NONE;
+    piece->color = 0;
+    piece->x = -1;
+    piece->y = -1;
 }
 
 bool loadPieceTextures(SDL_Renderer* renderer, Board_t* board) {

@@ -41,7 +41,7 @@ int main() {
         return 1;
     }
 
-    Board_t* board = InitBoardFromFen("rnbqkb1r/ppN1pppp/5n2/8/3P4/8/PPP1PPPP/R1BQKBNR b KQkq - 0 3");
+    Board_t* board = InitBoard();
     if(!board) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize board");
         SDL_DestroyRenderer(renderer);
@@ -68,7 +68,7 @@ int main() {
     // 1000 / fps = time taken for each frame
     // 1000 / 60 = 16.67ms
     int FPS = 60;
-
+    Piece_t* curPiece = NULL;
 
     while(!quit) {
         while(SDL_PollEvent(&event)) {
@@ -87,28 +87,25 @@ int main() {
 
 
                 } else if(event.button.button == SDL_BUTTON_LEFT) {
-                    Piece_t* piece = getPiece(board, row, col);
-                    
-
-                    if(piece) {
-                        movePiece(board, piece, rand()%8, rand()%8);
-                        // piece->x = rand()%8;
-                        // piece->y = rand()%8;
+                    // new piece
+                    if(curPiece == NULL) {
+                        curPiece = getPiece(board, row, col);;
+                        continue;
                     }
 
-                    printBoard(board);
+                    movePiece(board, curPiece, row, col);
+                    curPiece = NULL;
+
+                    // Piece_t* piece = getPiece(board, row, col);
+                    
+
+                    // if(piece) {
+                    //     movePiece(board, piece, rand()%8, rand()%8);
+                    // }
+
+                    // printBoard(board);
                 }
             }
-            // if(event.type == SDL_QUIT) {
-            //     quit = true;
-            // } else if(event.type == SDL_MOUSEBUTTONDOWN && ) {
-            //     int col = event.button.x / COL_SIZE,
-            //         row = event.button.y / ROW_SIZE;
-
-            //     // printf("Pressed at %dx%d\n", x, y);
-
-            //     highlight_coord(row, col);
-            // }
         }
 
 
