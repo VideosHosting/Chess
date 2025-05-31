@@ -77,7 +77,12 @@ static void loadFen(const char* fen, Board_t* board) {
     }
 }
 
+// Initialize the board with the starting position
 Board_t* InitBoard() {
+    return InitBoardFromFen(STARTING_POSITION);
+}
+
+Board_t* InitBoardFromFen(const char* fen) {
     Board_t* board = (Board_t*)malloc(sizeof(Board_t));
     if(!board) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for board.");
@@ -95,7 +100,7 @@ Board_t* InitBoard() {
     // so PieceType will be PIECE_NONE
     SDL_memset(board->pieces, 0, DIM_X * DIM_Y * sizeof(Piece_t));
     
-    loadFen(STARTING_POSITION, board);
+    loadFen(fen, board);
 
     // Set the FEN string
     board->fen = STARTING_POSITION;

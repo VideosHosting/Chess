@@ -45,7 +45,7 @@ int main() {
         return 1;
     }
 
-    Board_t* Board = InitBoard();
+    Board_t* Board = InitBoardFromFen("rnbqkb1r/ppN1pppp/5n2/8/3P4/8/PPP1PPPP/R1BQKBNR b KQkq - 0 3");
     if(!Board) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize board");
         SDL_DestroyRenderer(renderer);
@@ -55,7 +55,16 @@ int main() {
         return 1;
     }
 
-    loadPieceTextures(renderer, Board);
+    bool result = loadPieceTextures(renderer, Board);
+    if(!result) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load all piece textures");
+        freeBoard(Board);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        IMG_Quit();
+        return 1;
+    }
 
     // Piece_t whitePawn = CreatePiece(0, 0, PAWN, WHITE);
     // LoadPieceTexture(renderer, &whitePawn);

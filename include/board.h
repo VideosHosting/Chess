@@ -15,6 +15,7 @@ typedef struct Board {
 
 
 Board_t* InitBoard();
+Board_t* InitBoardFromFen(const char* fen);
 
 bool loadPieceTextures(SDL_Renderer* renderer, Board_t* board);
 
