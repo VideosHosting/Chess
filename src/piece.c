@@ -66,18 +66,6 @@ void InitPiece(Piece_t* piece, int x, int y, PieceType_t type, PieceColor_t colo
 
     *piece = CreatePiece(x, y, type, color);
 
-    // piece->x = x;
-    // piece->y = y;
-    // piece->type = type;
-    // piece->color = color;
-    // piece->texture = NULL; // Initialize texture to NULL
-
-    // SDL_Log("Creating piece at (%d, %d) of type %s and color %c", x, y, PieceTypeToString(type), color);
-
-    // if(piece->x < 0 || piece->x >= DIM_X || piece->y < 0 || piece->y >= DIM_Y) {
-    //     SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Piece position (%d, %d) is out of bounds.", piece->x, piece->y);
-    // }
-
 }
 
 void drawPiece(SDL_Renderer* renderer, Piece_t* piece) {
