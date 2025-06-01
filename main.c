@@ -7,7 +7,6 @@
 #include "board.h"
 
 int main() {
-
     if(SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("SDL_Init Error: %s\n", SDL_GetError());
 
@@ -43,15 +42,6 @@ int main() {
 
     Board_t board;
     InitBoard(&board);
-    // Board_t* board = InitBoard();
-    // if(!board) {
-    //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize board");
-    //     SDL_DestroyRenderer(renderer);
-    //     SDL_DestroyWindow(window);
-    //     SDL_Quit();
-    //     IMG_Quit();
-    //     return 1;
-    // }
 
     bool result = loadPieceTextures(renderer, &board);
     if(!result) {
@@ -88,14 +78,33 @@ int main() {
                     // new piece
                     if(curPiece == NULL) {
                         if((curPiece = getPiece(&board, row, col), curPiece)) {
-                            highlight_coord(row, col);
+                            if(curPiece->type == PAWN) {
+
+                                int size = 0;
+                                Move_t* moves = PawnMoves(&board, curPiece, &size);
+                                for(int i = 0; i < size; i++) {
+                                    SDL_Log("Legal move %d: from (%d, %d) to (%d, %d)", i + 1, moves[i].from_row, moves[i].from_col, moves[i].to_row, moves[i].to_col);
+                                }
+                                if(moves) {
+                                    set_legal_moves(moves, size);
+                                    free(moves);
+                                } else {
+                                    SDL_Log("No legal moves for the selected pawn.");
+                                }
+                            } else {
+                                SDL_Log("Selected piece is not a pawn.");
+                            }
+
+
+                            // highlight_coord(row, col);
                         }
                         continue;
                     }
 
                     movePiece(&board, curPiece, row, col);
+                    set_legal_moves(NULL, 0);
                     curPiece = NULL;
-                    unhighlight_coord();
+                    // unhighlight_coord();
                 }
             }
         }
@@ -107,6 +116,7 @@ int main() {
         drawBoard(renderer);
         drawHighlighted(renderer);
         drawPieces(renderer, &board);
+        draw_legal_moves(renderer);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(1000 / FPS); // Delay to maintain the frame rate

@@ -3,9 +3,9 @@
 
 #include <SDL2/SDL.h>
 #include <stdbool.h>
-
-#include "piece.h"
 #include "setting.h"
+#include "piece.h"
+#include "move.h"
 
 typedef struct Board {
     Piece_t pieces[DIM_X * DIM_Y];
