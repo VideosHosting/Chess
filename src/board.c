@@ -178,7 +178,10 @@ void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol) {
     if(nPiece == piece) {
         return;
     }
-    if(piece->color != board->turn) {
+    // if(piece->color != board->turn) {
+    //     return;
+    // }
+    if(piece->color == nPiece->color) {
         return;
     }
 

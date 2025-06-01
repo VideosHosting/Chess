@@ -15,8 +15,16 @@ typedef struct Move {
     bool promotion;
 } Move_t;
 
-void InitMoves(Move_t* moves, int from_row, int from_col, int to_row, int to_col, bool promotion);
+void InitMoveP(Move_t* moves, Piece_t* piece, int to_row, int to_col, bool promotion);
+void InitMove(Move_t* moves, int from_row, int from_col, int to_row, int to_col, bool promotion);
 
+Move_t* getLegalMoves(Board_t* board, Piece_t* piece, int* size);
+
+Move_t* KingMoves(Board_t* board, Piece_t* piece, int* size);
+Move_t* QueenMoves(Board_t* board, Piece_t* piece, int* size);
+Move_t* BishopMoves(Board_t* board, Piece_t* piece, int* size);
+Move_t* RookMoves(Board_t* board, Piece_t* piece, int* size);
+Move_t* KnightMoves(Board_t* board, Piece_t* piece, int* size);
 Move_t* PawnMoves(Board_t* board, Piece_t* piece, int* size);
 
 void set_legal_moves(Move_t* moves, size_t size);

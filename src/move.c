@@ -44,7 +44,17 @@ void draw_legal_moves(SDL_Renderer* renderer) {
     }
 }
 
-void InitMoves(Move_t* moves, int from_row, int from_col, int to_row, int to_col, bool promotion) {
+void InitMoveP(Move_t* moves, Piece_t* piece, int to_row, int to_col, bool promotion) {
+    moves->from_row = piece->y;
+    moves->from_col = piece->x;
+
+    moves->to_row = to_row;
+    moves->to_col = to_col;
+
+    moves->promotion = promotion;
+}
+
+void InitMove(Move_t* moves, int from_row, int from_col, int to_row, int to_col, bool promotion) {
     moves->from_row = from_row;
     moves->from_col = from_col;
 
@@ -52,6 +62,75 @@ void InitMoves(Move_t* moves, int from_row, int from_col, int to_row, int to_col
     moves->to_col = to_col;
 
     moves->promotion = promotion;
+}
+
+Move_t* getLegalMoves(Board_t* board, Piece_t* piece, int* size) {
+    switch(piece->type) {
+        case PAWN:
+            return PawnMoves(board, piece, size);
+        case ROOK:
+            return RookMoves(board, piece, size);
+        case KNIGHT:
+            return KnightMoves(board, piece, size);
+        case BISHOP:
+            return BishopMoves(board, piece, size);
+        case QUEEN:
+            return QueenMoves(board, piece, size);
+        case KING:
+            return KingMoves(board, piece, size);
+        default:
+            return NULL;
+    }
+}
+
+// this makes life so much easier
+#define AllocMem(size) (Move_t*)malloc(size * sizeof(Move_t));
+#define Check(moves) if(!moves) { \
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory allocation failed for moves."); \
+    return NULL; \
+}
+
+static bool WithinBounds(int row, int col) {
+    return row >= 0 && row < DIM_X &&
+           col >= 0 && col < DIM_Y;
+}
+
+
+Move_t* KingMoves(Board_t* board, Piece_t* piece, int* size) {
+    return NULL;
+}
+Move_t* QueenMoves(Board_t* board, Piece_t* piece, int* size) {
+    return NULL;
+}
+Move_t* BishopMoves(Board_t* board, Piece_t* piece, int* size) {
+    return NULL;
+}
+Move_t* RookMoves(Board_t* board, Piece_t* piece, int* size) {
+    return NULL;
+}
+Move_t* KnightMoves(Board_t* board, Piece_t* piece, int* size) {
+    if (piece->type != KNIGHT) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Piece is not a knight.");
+        return NULL;
+    }
+
+    *size = 0;
+    Move_t* moves = AllocMem(8);
+    Check(moves);
+
+    int row = piece->x, col = piece->y;
+    row -= 2;
+
+    InitMoveP(&moves[(*size)++], piece, row, col-1, 0);
+    InitMoveP(&moves[(*size)++], piece, row, col+1, 0);
+
+    // Move_t* moves = (Move_t*)malloc(8 * sizeof(Move_t));
+    // if(!moves) {
+    //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory allocation failed for moves.");
+    //     return NULL;
+    // }
+
+    return moves;
 }
 
 Move_t* PawnMoves(Board_t* board, Piece_t* piece, int* size) {
@@ -64,22 +143,19 @@ Move_t* PawnMoves(Board_t* board, Piece_t* piece, int* size) {
     int start_row = (piece->color == WHITE) ? 6 : 1;
     *size = 0;
 
-    Move_t* moves = malloc(4 * sizeof(Move_t)); // Allocate space for up to 4 moves
-    if(!moves) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory allocation failed for moves.");
-        return NULL;
-    }
+    Move_t* moves = AllocMem(4);
+    Check(moves);
 
     // forward
     if(piece->y + direction >= 0 && piece->y + direction < DIM_Y &&
         !getPiece(board, piece->y + direction, piece->x)) {
 
-        InitMoves(&moves[(*size)++], piece->y, piece->x, piece->y + direction, piece->x, 0);
+        InitMoveP(&moves[(*size)++], piece, piece->y + direction, piece->x, 0);
 
 
         if(piece->y == start_row && 
            !getPiece(board, piece->y + 2 * direction, piece->x)) {
-            InitMoves(&moves[(*size)++], piece->y, piece->x, piece->y + 2 * direction, piece->x, 0);
+            InitMoveP(&moves[(*size)++], piece, piece->y + 2 * direction, piece->x, 0);
         }
     }
 
@@ -87,7 +163,7 @@ Move_t* PawnMoves(Board_t* board, Piece_t* piece, int* size) {
     if(piece->x > 0 && piece->y + direction >= 0 && piece->y + direction < DIM_Y) {
         Piece_t* target = getPiece(board, piece->y + direction, piece->x - 1);
         if(target && target->color != piece->color) {
-            InitMoves(&moves[(*size)++], piece->y, piece->x, piece->y + direction, piece->x - 1, 0);
+            InitMoveP(&moves[(*size)++], piece, piece->y + direction, piece->x - 1, 0);
         }
     }
 
@@ -95,7 +171,7 @@ Move_t* PawnMoves(Board_t* board, Piece_t* piece, int* size) {
     if(piece->x < DIM_X - 1 && piece->y + direction >= 0 && piece->y + direction < DIM_Y) {
         Piece_t* target = getPiece(board, piece->y + direction, piece->x + 1);
         if(target && target->color != piece->color) {
-            InitMoves(&moves[(*size)++], piece->y, piece->x, piece->y + direction, piece->x + 1, 0);
+            InitMoveP(&moves[(*size)++], piece, piece->y + direction, piece->x + 1, 0);
         }
     }
 

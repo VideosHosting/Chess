@@ -78,21 +78,17 @@ int main() {
                     // new piece
                     if(curPiece == NULL) {
                         if((curPiece = getPiece(&board, row, col), curPiece)) {
-                            if(curPiece->type == PAWN) {
 
-                                int size = 0;
-                                Move_t* moves = PawnMoves(&board, curPiece, &size);
-                                for(int i = 0; i < size; i++) {
-                                    SDL_Log("Legal move %d: from (%d, %d) to (%d, %d)", i + 1, moves[i].from_row, moves[i].from_col, moves[i].to_row, moves[i].to_col);
-                                }
-                                if(moves) {
-                                    set_legal_moves(moves, size);
-                                    free(moves);
-                                } else {
-                                    SDL_Log("No legal moves for the selected pawn.");
-                                }
+                            int size = 0;
+                            Move_t* moves = getLegalMoves(&board, curPiece, &size);
+                            // for(int i = 0; i < size; i++) {
+                            //     SDL_Log("Legal move %d: from (%d, %d) to (%d, %d)", i + 1, moves[i].from_row, moves[i].from_col, moves[i].to_row, moves[i].to_col);
+                            // }
+                            if(moves) {
+                                set_legal_moves(moves, size);
+                                free(moves);
                             } else {
-                                SDL_Log("Selected piece is not a pawn.");
+                                SDL_Log("No legal moves for the selected piece.");
                             }
 
 
