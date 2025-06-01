@@ -35,21 +35,17 @@ void drawBoard(SDL_Renderer* renderer) {
     }
 }
 
+void unhighlight_coord() {
+    is_highlighted = false;
+}
+
 void highlight_coord(int row, int col) {
-    // unhighlight
-    if((highlight_area.x / COL_SIZE) == col && (highlight_area.y / ROW_SIZE) == row) {
-        highlight_area.x = -1;
-        highlight_area.y = -1;
-        is_highlighted = false;
-        return;
-    }
 
     is_highlighted = true;
 
     highlight_area.x = col * COL_SIZE;
     highlight_area.y = row * ROW_SIZE;
 
-    SDL_Log("Highlighting cell (%d, %d) at pixel (%d, %d)", row, col, highlight_area.x, highlight_area.y);
 }
 
 void drawHighlighted(SDL_Renderer* renderer) {
@@ -76,9 +72,9 @@ static PieceType_t GetPieceTypeByLetter(char c) {
 static void loadFen(const char* fen, Board_t* board) {
     SDL_Log("Loading FEN: %s", fen);
     int row = 0, col = 0;
+    int i =0;
 
-
-    for(int i = 0; fen[i] != '\0' && fen[i] != ' ' && row < DIM_Y; ++i) {
+    for(; fen[i] != '\0' && fen[i] != ' ' && row < DIM_Y; ++i) {
         char c = fen[i];
 
         if(c == '/') {
@@ -102,37 +98,49 @@ static void loadFen(const char* fen, Board_t* board) {
     if(row < DIM_Y - 1 || col < DIM_X - 1) {
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "FEN string did not fill the board properly. Expected %dx%d rows, got %dx%d.", DIM_X, DIM_Y, row + 1, col + 1);
     }
+
+    if(fen[i] == '\0') {
+        return;
+    }
+
+    board->turn = fen[++i];
+
+    //TODO: after fetching turn, next is castling, pawn moves, half moves & full moves
 }
 
 // Initialize the board with the starting position
-Board_t* InitBoard() {
-    return InitBoardFromFen(STARTING_POSITION);
+void InitBoard(Board_t* board) {
+    return InitBoardFromFen(board, STARTING_POSITION);
 }
 
-Board_t* InitBoardFromFen(const char* fen) {
-    Board_t* board = (Board_t*)malloc(sizeof(Board_t));
-    if(!board) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for board.");
-        return NULL;
-    }
-
-    board->pieces = (Piece_t*)malloc(DIM_X * DIM_Y * sizeof(Piece_t));
-    if(!board->pieces) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for pieces.");
-        free(board);
-        return NULL;
-    }
-
-    // zero out the pieces array
-    // so PieceType will be PIECE_NONE
+void InitBoardFromFen(Board_t* board, const char* fen) {
     SDL_memset(board->pieces, 0, DIM_X * DIM_Y * sizeof(Piece_t));
-    
+
     loadFen(fen, board);
+    
+    // Board_t* board = (Board_t*)malloc(sizeof(Board_t));
+    // if(!board) {
+    //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for board.");
+    //     return NULL;
+    // }
 
-    // Set the FEN string
-    board->fen = STARTING_POSITION;
+    // board->pieces = (Piece_t*)malloc(DIM_X * DIM_Y * sizeof(Piece_t));
+    // if(!board->pieces) {
+    //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for pieces.");
+    //     free(board);
+    //     return NULL;
+    // }
 
-    return board;
+    // // zero out the pieces array
+    // // so PieceType will be PIECE_NONE
+    // SDL_memset(board->pieces, 0, DIM_X * DIM_Y * sizeof(Piece_t));
+    
+    // loadFen(fen, board);
+
+    // // Set the FEN string
+    // board->fen = STARTING_POSITION;
+
+    // return board;
 }
 
 void printBoard(Board_t* board) {
@@ -158,7 +166,6 @@ void printBoard(Board_t* board) {
 Piece_t* getPiece(Board_t* board, int row, int col) {
     Piece_t* piece = &board->pieces[row * DIM_X + col];
 
-
     if(piece->type == PIECE_NONE) {
         return NULL;
     }
@@ -168,11 +175,19 @@ Piece_t* getPiece(Board_t* board, int row, int col) {
 
 void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol) {
     Piece_t* nPiece = &board->pieces[nrow * DIM_X + ncol];
+    if(nPiece == piece) {
+        return;
+    }
+    if(piece->color != board->turn) {
+        return;
+    }
 
     // Free texture if capturing
-    if(nPiece->texture && nPiece->texture != piece->texture) {
+    if(nPiece->type != PIECE_NONE) {
         freePieceTexture(nPiece);
     }
+    
+    nPiece->type = PIECE_NONE;
 
     nPiece->texture = piece->texture;
     nPiece->color = piece->color;
@@ -185,6 +200,8 @@ void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol) {
     piece->color = 0;
     piece->x = -1;
     piece->y = -1;
+
+    board->turn = (board->turn == 'w') ? 'b' : 'w';
 }
 
 bool loadPieceTextures(SDL_Renderer* renderer, Board_t* board) {
@@ -233,8 +250,5 @@ void freeBoard(Board_t* board) {
                 freePieceTexture(&board->pieces[i]);
             }
         }
-        free(board->pieces);
     }
-
-    free(board);
 }

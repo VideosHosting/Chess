@@ -25,7 +25,7 @@ typedef struct Piece {
     PieceColor_t color; // Color of the piece (e.g., white or black)
 } Piece_t;
 
-// initialization
+// Initialization functions
 Piece_t CreatePiece(int x, int y, PieceType_t type, PieceColor_t color);
 void InitPiece(Piece_t* piece, int x, int y, PieceType_t type, PieceColor_t color);
 
