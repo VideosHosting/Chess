@@ -81,10 +81,11 @@ int main() {
 
                             int size = 0;
                             Move_t* moves = getLegalMoves(&board, curPiece, &size);
-                            // for(int i = 0; i < size; i++) {
-                            //     SDL_Log("Legal move %d: from (%d, %d) to (%d, %d)", i + 1, moves[i].from_row, moves[i].from_col, moves[i].to_row, moves[i].to_col);
-                            // }
                             if(moves) {
+                                for(int i = 0; i < size; i++) {
+                                    SDL_Log("Legal move %d: from (%d, %d) to (%d, %d)", i + 1, moves[i].from_row, moves[i].from_col, moves[i].to_row, moves[i].to_col);
+                                }
+                                
                                 set_legal_moves(moves, size);
                                 free(moves);
                             } else {
