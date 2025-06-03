@@ -91,9 +91,6 @@ int main() {
                             } else {
                                 SDL_Log("No legal moves for the selected piece.");
                             }
-
-
-                            highlight_coord(row, col);
                         }
                         continue;
                     }
@@ -101,7 +98,6 @@ int main() {
                     movePiece(&board, curPiece, row, col);
                     set_legal_moves(NULL, 0);
                     curPiece = NULL;
-                    unhighlight_coord();
                 }
             }
         }

@@ -130,13 +130,61 @@ static void generateVerticalMoves(Board_t* board, Piece_t* piece, Move_t* moves,
 }
 
 // takes in Move_t* ptr assuming it has enough space
-static Move_t* generateDiagonalMoves(Board_t* board, Piece_t* piece, Move_t* moves) {
+static void generateDiagonalMoves(Board_t* board, Piece_t* piece, Move_t* moves, int* size) {
+    int row, col;
+    int directions[4][2] = {
+        {-1, -1}, // up-left
+        {-1,  1}, // up-right
+        { 1, -1}, // down-left
+        { 1,  1}  // down-right
+    };
+
+    for (int d = 0; d < 4; ++d) {
+        int row = piece->y + directions[d][0];
+        int col = piece->x + directions[d][1];
+
+        while (WithinBounds(row, col)) {
+            Piece_t* target = getPiece(board, row, col);
+
+            if (target && target->color == piece->color) {
+                break;
+            }
+
+            InitMoveP(&moves[(*size)++], piece, row, col, 0);
+
+            if (target && target->color != piece->color) {
+                break;
+            }
+
+            row += directions[d][0];
+            col += directions[d][1];
+        }
+    }
 }
 
 // takes in Move_t* ptr assuming it has enough space
-static Move_t* generateHorizontalMoves(Board_t* board, Piece_t* piece, Move_t* moves) {
-}
+static void generateHorizontalMoves(Board_t* board, Piece_t* piece, Move_t* moves, int* size) {
+    int row = piece->y;
+    for(int dir = -1; dir <= 1; dir += 2) {
+        int col = piece->x + dir;
 
+        while (WithinBounds(row, col)) {
+            Piece_t* target = getPiece(board, row, col);
+
+            if(target && target->color == piece->color) {
+                break;
+            }
+
+            InitMoveP(&moves[(*size)++], piece, row, col, 0);
+
+            if(target && target->color != piece->color) {
+                break;
+            }
+
+            col += dir;
+        }
+    }
+}
 
 Move_t* KingMoves(Board_t* board, Piece_t* piece, int* size) {
     return NULL;
@@ -145,8 +193,28 @@ Move_t* QueenMoves(Board_t* board, Piece_t* piece, int* size) {
     return NULL;
 }
 Move_t* BishopMoves(Board_t* board, Piece_t* piece, int* size) {
-    return NULL;
+    CheckType(piece, BISHOP, "Piece is not a Bishop")
+
+    *size = 0;
+    Move_t* moves = AllocMem(13);
+    Check(moves);
+
+    generateDiagonalMoves(board, piece, moves, size);
+
+    if (*size == 0) {
+        free(moves);
+        return NULL;
+    }
+
+    moves = realloc(moves, (*size) * sizeof(Move_t));
+    if (!moves) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
+        return NULL;
+    }
+
+    return moves;
 }
+
 Move_t* RookMoves(Board_t* board, Piece_t* piece, int* size) {
     CheckType(piece, ROOK, "Piece is not a rook")
 
@@ -155,11 +223,13 @@ Move_t* RookMoves(Board_t* board, Piece_t* piece, int* size) {
     Check(moves);
 
     generateVerticalMoves(board, piece, moves, size);
+    generateHorizontalMoves(board, piece, moves, size);
 
     if (*size == 0) {
         free(moves);
         return NULL;
     }
+
     moves = realloc(moves, (*size) * sizeof(Move_t));
     if (!moves) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
@@ -260,6 +330,8 @@ Move_t* PawnMoves(Board_t* board, Piece_t* piece, int* size) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
         return NULL;
     }
+
+    return moves;
 }
 
 // Move_t* PawnMoves(Board_t* board, Piece_t* piece, int* size) {
