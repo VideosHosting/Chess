@@ -84,7 +84,7 @@ int main() {
                                 //     SDL_Log("Legal move %d: from (%d, %d) to (%d, %d)", i + 1, moves[i].from_row, moves[i].from_col, moves[i].to_row, moves[i].to_col);
                                 // }
                                 
-                                set_legal_moves(movelist.moves, movelist.size);
+                                set_legal_moves(movelist);
                                 free(movelist.moves);
                             } else {
                                 SDL_Log("No legal moves for the selected piece.");
@@ -94,13 +94,8 @@ int main() {
                     }
 
                     movePiece(&board, curPiece, row, col);
-                    set_legal_moves(NULL, 0);
+                    set_legal_moves((MoveList_t){NULL, 0});
                     curPiece = NULL;
-
-                    // char buffer[128];
-                    // // SDL_memset(buffer, )
-                    // getFEN(&board, buffer);
-                    // SDL_Log("FEN: %s", buffer);
                 }
             }
         }

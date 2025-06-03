@@ -117,30 +117,6 @@ void InitBoardFromFen(Board_t* board, const char* fen) {
     SDL_memset(board->pieces, 0, DIM_X * DIM_Y * sizeof(Piece_t));
 
     loadFen(fen, board);
-    
-    // Board_t* board = (Board_t*)malloc(sizeof(Board_t));
-    // if(!board) {
-    //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for board.");
-    //     return NULL;
-    // }
-
-    // board->pieces = (Piece_t*)malloc(DIM_X * DIM_Y * sizeof(Piece_t));
-    // if(!board->pieces) {
-    //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for pieces.");
-    //     free(board);
-    //     return NULL;
-    // }
-
-    // // zero out the pieces array
-    // // so PieceType will be PIECE_NONE
-    // SDL_memset(board->pieces, 0, DIM_X * DIM_Y * sizeof(Piece_t));
-    
-    // loadFen(fen, board);
-
-    // // Set the FEN string
-    // board->fen = STARTING_POSITION;
-
-    // return board;
 }
 
 void printBoard(Board_t* board) {
@@ -192,6 +168,12 @@ void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol) {
     //     return;
     // }
     if(piece->color == nPiece->color) {
+        return;
+    }
+    Move_t move;
+    InitMoveP(&move, piece, nrow, ncol, 0);
+    
+    if(!isValidMove( board, piece, &move )) {
         return;
     }
 

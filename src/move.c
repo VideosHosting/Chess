@@ -2,33 +2,52 @@
 #include "board.h"
 
 // for highlighting moves
-static Move_t* legal_moves = NULL;
-static size_t legal_moves_size = 0;
+static MoveList_t legal_moves;
 
 
+// this makes life so much easier
+#define AllocMem(size) (Move_t*)malloc(size * sizeof(Move_t));
+#define CheckType(piece, Type, msg) if((piece)->type != Type) { \
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", msg); \
+    return (MoveList_t){NULL, 0}; \
+}
+#define Check(moves) if(!moves) { \
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory allocation failed for moves."); \
+    return (MoveList_t){NULL, 0}; \
+}
+#define ReAllocAttempt(movelist) Move_t* tmp = realloc(movelist.moves, movelist.size * sizeof(Move_t)); \
+if(!tmp) {  /* if allocation failed then we just keep it as it is. */ \
+    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves"); \
+    return movelist; \
+} \
+movelist.moves = tmp;
 
-Move_t* copy(Move_t* moves, size_t size) {
-    Move_t* copy = malloc(size * sizeof(Move_t));
+// I'm actually abusing macros 😭🙏🏽🙏🏽🙏🏽
+
+
+static Move_t* copy(MoveList_t* movelist) {
+    Move_t* copy = AllocMem(movelist->size)
     if(copy == NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for move copy.");
         return NULL;
     }
-    SDL_memcpy(copy, moves, size * sizeof(Move_t));
+
+    SDL_memcpy(copy, movelist->moves, movelist->size * sizeof(Move_t));
     return copy;
 }
 
-void set_legal_moves(Move_t* moves, size_t size) {
-    if(legal_moves_size != 0 && legal_moves) {
-        free(legal_moves);
-        legal_moves = NULL;
-        legal_moves_size = 0;
+void set_legal_moves(MoveList_t movelist) {
+    if(legal_moves.size != 0 && legal_moves.moves) {
+        free(legal_moves.moves);
+        legal_moves.moves = NULL;
+        legal_moves.size = 0;
     }
-    if(size == 0) {
+    if(movelist.size == 0) {
         return;
     }
 
-    legal_moves = copy(moves, size);
-    legal_moves_size = size;
+    legal_moves.moves = copy(&movelist);
+    legal_moves.size = movelist.size;
 }
 
 // we'll use a circle for legal move indication (better than a square)
@@ -45,15 +64,15 @@ static void draw_circle(SDL_Renderer* renderer, int cx, int cy, int radius) {
 }
 
 void draw_legal_moves(SDL_Renderer* renderer) {
-    if(legal_moves == NULL || legal_moves_size == 0) return;
+    if(legal_moves.moves == NULL || legal_moves.size == 0) return;
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 128); // semi-transparent green
     int cx, cy, radius;
 
-    for(size_t i = 0; i < legal_moves_size; i++) {
-        cx = legal_moves[i].to_col * COL_SIZE + COL_SIZE / 2;
-        cy = legal_moves[i].to_row * ROW_SIZE + ROW_SIZE / 2;
+    for(size_t i = 0; i < legal_moves.size; i++) {
+        cx = legal_moves.moves[i].to_col * COL_SIZE + COL_SIZE / 2;
+        cy = legal_moves.moves[i].to_row * ROW_SIZE + ROW_SIZE / 2;
 
         radius = (COL_SIZE < ROW_SIZE ? COL_SIZE : ROW_SIZE) / 6;
 
@@ -62,24 +81,38 @@ void draw_legal_moves(SDL_Renderer* renderer) {
     }
 }
 
-void InitMoveP(Move_t* moves, Piece_t* piece, int to_row, int to_col, bool promotion) {
-    moves->from_row = piece->y;
-    moves->from_col = piece->x;
-
-    moves->to_row = to_row;
-    moves->to_col = to_col;
-
-    moves->promotion = promotion;
+void InitMoveP(Move_t* move, Piece_t* piece, int to_row, int to_col, bool promotion) {
+    return InitMove(move, piece->y, piece->x, to_row, to_col, promotion);
 }
 
-void InitMove(Move_t* moves, int from_row, int from_col, int to_row, int to_col, bool promotion) {
-    moves->from_row = from_row;
-    moves->from_col = from_col;
+void InitMove(Move_t* move, int from_row, int from_col, int to_row, int to_col, bool promotion) {
+    move->from_row = from_row;
+    move->from_col = from_col;
 
-    moves->to_row = to_row;
-    moves->to_col = to_col;
+    move->to_row = to_row;
+    move->to_col = to_col;
 
-    moves->promotion = promotion;
+    move->promotion = promotion;
+}
+
+void AddMove(MoveList_t* movelist, Move_t* moves, int* size) {
+    int new_size = movelist->size + *size;
+    Move_t* new_moves = AllocMem(new_size);
+
+    SDL_memcpy(new_moves, movelist->moves, movelist->size * sizeof(Move_t));
+
+    for (int i = 0; i < *size; i++) {
+        new_moves[i+movelist->size] = moves[i];
+    }
+
+    free(movelist->moves);
+
+    movelist->moves = new_moves;
+    movelist->size = new_size;
+}
+
+void AddMoveM(MoveList_t* movelist, MoveList_t movelist2) {
+    return AddMove(movelist, movelist2.moves, &movelist2.size);
 }
 
 MoveList_t getLegalMoves(Board_t* board, Piece_t* piece) {
@@ -100,25 +133,6 @@ MoveList_t getLegalMoves(Board_t* board, Piece_t* piece) {
             return (MoveList_t){NULL, 0};
     }
 }
-
-// this makes life so much easier
-#define AllocMem(size) (Move_t*)malloc(size * sizeof(Move_t));
-#define CheckType(piece, Type, msg) if((piece)->type != Type) { \
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", msg); \
-    return (MoveList_t){NULL, 0}; \
-}
-#define Check(moves) if(!moves) { \
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory allocation failed for moves."); \
-    return (MoveList_t){NULL, 0}; \
-}
-#define ReAllocAttempt(movelist) Move_t* tmp = realloc(movelist.moves, movelist.size * sizeof(Move_t)); \
-if(!tmp) {  /* if allocation failed then we just keep it as it is, whatever */ \
-    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves"); \
-    return movelist; \
-} \
-movelist.moves = tmp;
-
-// I'm actually abusing macros 😭🙏🏽🙏🏽🙏🏽
 
 static inline bool WithinBounds(int row, int col) {
     return row >= 0 && row < DIM_Y &&
@@ -314,10 +328,6 @@ MoveList_t RookMoves(Board_t* board, Piece_t* piece) {
     movelist.moves = AllocMem(MAX_MOVES_ROOK);
     Check(movelist.moves);
 
-    // *size = 0;
-    // Move_t* moves = AllocMem(MAX_MOVES_ROOK);
-    // Check(moves);
-
     generateVerticalMoves(board, piece, movelist.moves, &movelist.size);
     generateHorizontalMoves(board, piece, movelist.moves, &movelist.size);
 
@@ -431,63 +441,3 @@ MoveList_t PawnMoves(Board_t* board, Piece_t* piece) {
 
     return movelist;
 }
-
-// Move_t* PawnMoves(Board_t* board, Piece_t* piece, int* size) {
-//     if(piece->type != PAWN) {
-//         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Piece is not a pawn.");
-//         return NULL;
-//     }
-
-//     int direction = (piece->color == WHITE) ? -1 : 1; // White moves up, Black moves down
-//     int start_row = (piece->color == WHITE) ? 6 : 1; // Starting row for pawns
-
-//     Move_t* moves = malloc(4 * sizeof(Move_t)); // Allocate space for up to 4 moves
-//     if(!moves) {
-//         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory allocation failed for moves.");
-//         return NULL;
-//     }
-
-//     *size = 0;
-
-//     // Forward move
-//     if(piece->y + direction >= 0 && piece->y + direction < DIM_Y && 
-//        !getPiece(board, piece->x, piece->y + direction)) {
-//         moves[(*size)++] = (Move_t){piece->y, piece->x, piece->x, piece->y + direction, 0};
-    
-//         // Double forward move from starting position
-//         if(piece->y == start_row && 
-//            !getPiece(board, piece->x, piece->y + 2 * direction)) {
-//             moves[(*size)++] = (Move_t){piece->y, piece->x, piece->x, piece->y + 2 * direction, 0};
-//         }
-//     }
-
-//     // Capture left
-//     if(piece->x > 0 && piece->y + direction >= 0 && piece->y + direction < DIM_Y) {
-//         Piece_t* target = getPiece(board, piece->x - 1, piece->y + direction);
-//         if(target && target->color != piece->color) {
-//             moves[(*size)++] = (Move_t){piece->y, piece->x, piece->x - 1, piece->y + direction, 0};
-//         }
-//     }
-
-//     // Capture right
-//     if(piece->x < DIM_X - 1 && piece->y + direction >= 0 && piece->y + direction < DIM_Y) {
-//         Piece_t* target = getPiece(board, piece->x + 1, piece->y + direction);
-//         if(target && target->color != piece->color) {
-//             moves[(*size)++] = (Move_t){piece->y, piece->x, piece->x + 1, piece->y + direction, 0};
-//         }
-//     }
-
-//     // If no moves found, free allocated memory and return NULL
-//     if(*size == 0) {
-//         free(moves);
-//         return NULL;
-//     }
-
-//     moves = realloc(moves, (*size) * sizeof(Move_t));
-//     if(!moves) {
-//         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
-//         return NULL;
-//     }
-
-//     return moves;
-// }
