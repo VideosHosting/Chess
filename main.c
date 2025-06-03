@@ -98,7 +98,7 @@ int main() {
                     curPiece = NULL;
 
                     // char buffer[128];
-                    // SDL_memset(buffer, )
+                    // // SDL_memset(buffer, )
                     // getFEN(&board, buffer);
                     // SDL_Log("FEN: %s", buffer);
                 }

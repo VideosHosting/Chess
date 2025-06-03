@@ -262,24 +262,19 @@ void getFEN(Board_t* board, char buffer[]) {
             Piece_t* piece = &board->pieces[row * DIM_X + col];
 
             if (piece->type != PIECE_NONE) {
-
-                if (skip != 0)
+               if (skip > 0)
                     buffer[size++] = '0' + skip;
 
-                char c = (char)piece->type;
-                if (piece->color == WHITE)
-                    c = SDL_toupper(c);
-
-                buffer[size++] = (piece->color == WHITE) ? SDL_toupper(piece->type) :
-                                                                       piece->type;
+                buffer[size++] = (piece->color == WHITE) ? SDL_toupper(piece->type) : piece->type;
                 skip = 0;
-
-            } else {
+                
+            } else
                 skip++;
-            }
+
         }
-        if (skip != 0)
+        if (skip > 0)
             buffer[size++] = '0' + skip;
+
         if (row != DIM_Y - 1)
             buffer[size++] = '/';
     }

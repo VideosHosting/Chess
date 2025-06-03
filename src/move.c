@@ -111,6 +111,14 @@ MoveList_t getLegalMoves(Board_t* board, Piece_t* piece) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory allocation failed for moves."); \
     return (MoveList_t){NULL, 0}; \
 }
+#define ReAllocAttempt(movelist) Move_t* tmp = realloc(movelist.moves, movelist.size * sizeof(Move_t)); \
+if(!tmp) {  /* if allocation failed then we just keep it as it is, whatever */ \
+    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves"); \
+    return movelist; \
+} \
+movelist.moves = tmp;
+
+// I'm actually abusing macros 😭🙏🏽🙏🏽🙏🏽
 
 static inline bool WithinBounds(int row, int col) {
     return row >= 0 && row < DIM_Y &&
@@ -204,33 +212,6 @@ static void generateHorizontalMoves(Board_t* board, Piece_t* piece, Move_t* move
     }
 }
 
-// pair getALLMoves(Board_t* board, PieceColor_t color, int* size) {
-//     *size = 0;
-//     int* sizes = (int*)malloc(16 * sizeof(int));
-//     Move_t** total_moves = (Move_t**)malloc(16 * sizeof(Move_t*));
-//     // int sizes[6] = {0};
-//     // Move_t* total_moves[6];
-
-//     for(int row = 0; row < DIM_Y; row++) {
-//         for(int col = 0; col < DIM_X; col++) {
-//             Piece_t* piece = getPiece(board, row, col);
-
-//             if(!piece || piece->color != color)
-//                 continue;
-
-//             int Nsize;
-//             Move_t* moves = getLegalMoves(board, piece, &Nsize);
-
-//             sizes[*size] = Nsize;
-//             total_moves[(*size)++] = moves;
-//         }
-//     }
-
-//     sizes = (int*)realloc(sizes, *size * sizeof(int));
-//     total_moves = (Move_t**)realloc(total_moves, *size * sizeof(Move_t*));
-
-// }
-
 MoveList_t KingMoves(Board_t* board, Piece_t* piece) {
     CheckType(piece, KING, "Piece is not a Bishop")
 
@@ -272,11 +253,7 @@ MoveList_t KingMoves(Board_t* board, Piece_t* piece) {
         return (MoveList_t){NULL, 0};
     }
 
-    movelist.moves = realloc(movelist.moves, movelist.size * sizeof(Move_t));
-    if(!movelist.moves) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
-        return (MoveList_t){NULL, 0};
-    }
+    ReAllocAttempt(movelist)
 
     return movelist;
 }
@@ -299,11 +276,7 @@ MoveList_t QueenMoves(Board_t* board, Piece_t* piece) {
         return (MoveList_t){NULL, 0};
     }
 
-    movelist.moves = realloc(movelist.moves, movelist.size * sizeof(Move_t));
-    if (!movelist.moves) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
-        return (MoveList_t){NULL, 0};
-    }
+    ReAllocAttempt(movelist);
 
     return movelist;
 }
@@ -328,11 +301,7 @@ MoveList_t BishopMoves(Board_t* board, Piece_t* piece) {
         return (MoveList_t){NULL, 0};
     }
 
-    movelist.moves = realloc(movelist.moves, movelist.size * sizeof(Move_t));
-    if (!movelist.moves) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
-        return (MoveList_t){NULL, 0};
-    }
+    ReAllocAttempt(movelist);
 
     return movelist;
 }
@@ -357,11 +326,7 @@ MoveList_t RookMoves(Board_t* board, Piece_t* piece) {
         return (MoveList_t){NULL, 0};
     }
 
-    movelist.moves = realloc(movelist.moves, movelist.size * sizeof(Move_t));
-    if (!movelist.moves) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
-        return (MoveList_t){NULL, 0};
-    }
+    ReAllocAttempt(movelist);
 
     return movelist;
 }
@@ -406,11 +371,8 @@ MoveList_t KnightMoves(Board_t* board, Piece_t* piece) {
         return (MoveList_t){NULL, 0};
     }
 
-    movelist.moves = realloc(movelist.moves, movelist.size * sizeof(Move_t));
-    if (!movelist.moves) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
-        return (MoveList_t){NULL, 0};
-    }
+    ReAllocAttempt(movelist);
+
     return movelist;
 }
 
@@ -465,11 +427,7 @@ MoveList_t PawnMoves(Board_t* board, Piece_t* piece) {
         return (MoveList_t){NULL, 0};
     }
 
-    movelist.moves = realloc(movelist.moves, movelist.size * sizeof(Move_t));
-    if(!movelist.moves) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
-        return (MoveList_t){NULL, 0};
-    }
+    ReAllocAttempt(movelist);
 
     return movelist;
 }
