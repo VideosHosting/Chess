@@ -116,8 +116,8 @@ void AddMove(MoveList_t* movelist, Move_t* moves, size_t* size) {
 }
 
 void AddMoveM(MoveList_t* movelist, MoveList_t movelist2) {
-    AddMove(movelist, movelist2.moves, movelist2.size);
- }
+    AddMove(movelist, movelist2.moves, &movelist2.size);
+}
 
 MoveList_t getLegalMoves(Board_t* board, Piece_t* piece) {
     switch(piece->type) {
@@ -149,7 +149,7 @@ static inline bool WithinBounds(int row, int col) {
 */
 
 // takes in Move_t* ptr assuming it has enough space
-static void generateVerticalMoves(Board_t* board, Piece_t* piece, Move_t* moves, int* size) {
+static void generateVerticalMoves(Board_t* board, Piece_t* piece, MoveList_t* movelist) {
     int col = piece->x;
 
     for (int dir = -1; dir <= 1; dir += 2) { // dir = -1 (up), +1 (down)
@@ -162,7 +162,7 @@ static void generateVerticalMoves(Board_t* board, Piece_t* piece, Move_t* moves,
                 break; // Blocked by same-color piece
             }
 
-            InitMoveP(&moves[(*size)++], piece, row, col, 0);
+            InitMoveP(&movelist->moves[movelist->size++], piece, row, col, 0);
 
             if (target && target->color != piece->color) {
                 break; // Capture ends line
@@ -173,8 +173,15 @@ static void generateVerticalMoves(Board_t* board, Piece_t* piece, Move_t* moves,
     }
 }
 
+
+/*
+    MoveList_t movelist = { AllocMem(Enough_Space) };
+    generateMoves(board, piece, &movelist)
+    movelist.moves -> moves generated
+    movelist.size -> size
+*/
 // takes in Move_t* ptr assuming it has enough space
-static void generateDiagonalMoves(Board_t* board, Piece_t* piece, Move_t* moves, int* size) {
+static void generateDiagonalMoves(Board_t* board, Piece_t* piece, MoveList_t* movelist) {
     int row, col;
     int directions[4][2] = {
         {-1, -1}, // up-left
@@ -194,7 +201,7 @@ static void generateDiagonalMoves(Board_t* board, Piece_t* piece, Move_t* moves,
                 break;
             }
 
-            InitMoveP(&moves[(*size)++], piece, row, col, 0);
+            InitMoveP(&movelist->moves[movelist->size++], piece, row, col, 0);
 
             if (target && target->color != piece->color) {
                 break;
@@ -207,7 +214,7 @@ static void generateDiagonalMoves(Board_t* board, Piece_t* piece, Move_t* moves,
 }
 
 // takes in Move_t* ptr assuming it has enough space
-static void generateHorizontalMoves(Board_t* board, Piece_t* piece, Move_t* moves, int* size) {
+static void generateHorizontalMoves(Board_t* board, Piece_t* piece, MoveList_t* movelist) {
     int row = piece->y;
     for(int dir = -1; dir <= 1; dir += 2) {
         int col = piece->x + dir;
@@ -219,7 +226,7 @@ static void generateHorizontalMoves(Board_t* board, Piece_t* piece, Move_t* move
                 break;
             }
 
-            InitMoveP(&moves[(*size)++], piece, row, col, 0);
+            InitMoveP(&movelist->moves[movelist->size++], piece, row, col, 0);
 
             if(target && target->color != piece->color) {
                 break;
@@ -285,9 +292,9 @@ MoveList_t QueenMoves(Board_t* board, Piece_t* piece) {
     movelist.moves = AllocMem(MAX_MOVES_QUEEN);
     Check(movelist.moves);
 
-    generateDiagonalMoves(board, piece, movelist.moves, &movelist.size);
-    generateHorizontalMoves(board, piece, movelist.moves, &movelist.size);
-    generateVerticalMoves(board, piece, movelist.moves, &movelist.size);
+    generateDiagonalMoves(board, piece, &movelist);
+    generateHorizontalMoves(board, piece, &movelist);
+    generateVerticalMoves(board, piece, &movelist);
 
     if (movelist.size == 0) {
         free(movelist.moves);
@@ -312,7 +319,7 @@ MoveList_t BishopMoves(Board_t* board, Piece_t* piece) {
     // Move_t* moves = AllocMem(MAX_MOVES_BISHOP);
     // Check(moves);
 
-    generateDiagonalMoves(board, piece, movelist.moves, &movelist.size);
+    generateDiagonalMoves(board, piece, &movelist);
 
     if (movelist.size == 0) {
         free(movelist.moves);
@@ -332,8 +339,8 @@ MoveList_t RookMoves(Board_t* board, Piece_t* piece) {
     movelist.moves = AllocMem(MAX_MOVES_ROOK);
     Check(movelist.moves);
 
-    generateVerticalMoves(board, piece, movelist.moves, &movelist.size);
-    generateHorizontalMoves(board, piece, movelist.moves, &movelist.size);
+    generateVerticalMoves(board, piece, &movelist);
+    generateHorizontalMoves(board, piece, &movelist);
 
     if (movelist.size == 0) {
         free(movelist.moves);
@@ -444,4 +451,4 @@ MoveList_t PawnMoves(Board_t* board, Piece_t* piece) {
     ReAllocAttempt(movelist);
 
     return movelist;
-}}
+}

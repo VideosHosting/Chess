@@ -18,14 +18,14 @@ typedef struct Move {
 // hate carrying around a Move_t & size ptr
 typedef struct MoveList {
     Move_t* moves;
-    int size;
+    size_t size;
 
 } MoveList_t;
 
 void InitMoveP(Move_t* move, Piece_t* piece, int to_row, int to_col, bool promotion);
 void InitMove(Move_t* move, int from_row, int from_col, int to_row, int to_col, bool promotion);
 
-void AddMove(MoveList_t* movelist, Move_t* moves, int* size);
+void AddMove(MoveList_t* movelist, Move_t* moves, size_t* size);
 void AddMoveM(MoveList_t* movelist, MoveList_t movelist2);
 
 /* move generation */
