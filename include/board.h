@@ -32,6 +32,7 @@ void printBoard(Board_t* board);
 // Board manipulation
 Piece_t* getPiece(Board_t* board, int row, int col);
 void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol);
+void getFEN(Board_t* board, char buffer[]);
 
 // Cleanup
 void freeBoard(Board_t* board);

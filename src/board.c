@@ -163,7 +163,17 @@ void printBoard(Board_t* board) {
     }
 }
 
+static inline bool WithinBounds(int row, int col) {
+    return row >= 0 && row < DIM_Y &&
+           col >= 0 && col < DIM_X;
+}
+
 Piece_t* getPiece(Board_t* board, int row, int col) {
+    if(!WithinBounds(row, col)) { //avoid out of bounds shit (my stupidity might cause something)
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Attempt to Access out-of-bounds coords row (y): %d, col (x): %d)", row, col);
+        return NULL;
+    }
+
     Piece_t* piece = &board->pieces[row * DIM_X + col];
 
     if(piece->type == PIECE_NONE) {
@@ -242,6 +252,38 @@ void drawPieces(SDL_Renderer* renderer, Board_t* board) {
             drawPiece(renderer, piece);
         }
     }
+}
+
+void getFEN(Board_t* board, char buffer[]) {
+    int size = 0;
+    for (int row = 0; row < DIM_Y; row++) {
+        int skip = 0;
+        for (int col = 0; col < DIM_X; col++) {
+            Piece_t* piece = &board->pieces[row * DIM_X + col];
+
+            if (piece->type != PIECE_NONE) {
+
+                if (skip != 0)
+                    buffer[size++] = '0' + skip;
+
+                char c = (char)piece->type;
+                if (piece->color == WHITE)
+                    c = SDL_toupper(c);
+
+                buffer[size++] = (piece->color == WHITE) ? SDL_toupper(piece->type) :
+                                                                       piece->type;
+                skip = 0;
+
+            } else {
+                skip++;
+            }
+        }
+        if (skip != 0)
+            buffer[size++] = '0' + skip;
+        if (row != DIM_Y - 1)
+            buffer[size++] = '/';
+    }
+    buffer[size] = '\0';
 }
 
 void freeBoard(Board_t* board) {
