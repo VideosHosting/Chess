@@ -47,6 +47,10 @@ void set_legal_moves(MoveList_t movelist) {
     }
 
     legal_moves.moves = copy(&movelist);
+    if (legal_moves.moves == NULL) {
+        legal_moves.size = 0;
+        return;
+    }
     legal_moves.size = movelist.size;
 }
 
@@ -95,7 +99,7 @@ void InitMove(Move_t* move, int from_row, int from_col, int to_row, int to_col, 
     move->promotion = promotion;
 }
 
-void AddMove(MoveList_t* movelist, Move_t* moves, int* size) {
+void AddMove(MoveList_t* movelist, Move_t* moves, size_t* size) {
     int new_size = movelist->size + *size;
     Move_t* new_moves = AllocMem(new_size);
 
@@ -112,8 +116,8 @@ void AddMove(MoveList_t* movelist, Move_t* moves, int* size) {
 }
 
 void AddMoveM(MoveList_t* movelist, MoveList_t movelist2) {
-    return AddMove(movelist, movelist2.moves, &movelist2.size);
-}
+    AddMove(movelist, movelist2.moves, movelist2.size);
+ }
 
 MoveList_t getLegalMoves(Board_t* board, Piece_t* piece) {
     switch(piece->type) {
@@ -440,4 +444,4 @@ MoveList_t PawnMoves(Board_t* board, Piece_t* piece) {
     ReAllocAttempt(movelist);
 
     return movelist;
-}
+}}

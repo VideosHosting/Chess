@@ -15,6 +15,7 @@ typedef struct Move {
     bool promotion;
 } Move_t;
 
+// hate carrying around a Move_t & size ptr
 typedef struct MoveList {
     Move_t* moves;
     int size;

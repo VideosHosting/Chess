@@ -16,6 +16,8 @@ static bool inline MoveEqual(Move_t* move1, Move_t* move2) {
 }
 
 static bool IsInMoves(Move_t* move, MoveList_t moves) {
+    if(!move || !moves.moves) return false;
+    
     for(int i = 0; i < moves.size; i++) {
         Move_t* n_move = moves.moves + i;
 
@@ -30,11 +32,15 @@ static bool IsInMoves(Move_t* move, MoveList_t moves) {
 // checks if a move is valid.
 // this should only take a single move
 bool isValidMove(Board_t* board, Piece_t* piece, Move_t* move) {
-
-    MoveList_t moves = getLegalMoves(board, piece);
-
-    if(IsInMoves(move, moves)) {
-        return true;
+ 
+     MoveList_t moves = getLegalMoves(board, piece);
+    
+    bool result = IsInMoves(move, moves);
+    
+    // Free allocated memory
+    if(moves.moves) {
+        free(moves.moves);
     }
-    return false;
-}
+    
+    return result;
+ }
