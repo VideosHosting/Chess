@@ -9,7 +9,6 @@
 
 typedef struct Board {
     Piece_t pieces[DIM_X * DIM_Y];
-    const char* fen;       // FEN string representing the board state
     char turn;
 } Board_t;
 

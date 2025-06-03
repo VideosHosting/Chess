@@ -1,8 +1,11 @@
 #include "move.h"
 #include "board.h"
 
+// for highlighting moves
 static Move_t* legal_moves = NULL;
 static size_t legal_moves_size = 0;
+
+
 
 Move_t* copy(Move_t* moves, size_t size) {
     Move_t* copy = malloc(size * sizeof(Move_t));
@@ -86,7 +89,7 @@ Move_t* getLegalMoves(Board_t* board, Piece_t* piece, int* size) {
 // this makes life so much easier
 #define AllocMem(size) (Move_t*)malloc(size * sizeof(Move_t));
 #define CheckType(piece, Type, msg) if((piece)->type != Type) { \
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, msg); \
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", msg); \
     return NULL; \
 }
 #define Check(moves) if(!moves) { \
@@ -95,8 +98,8 @@ Move_t* getLegalMoves(Board_t* board, Piece_t* piece, int* size) {
 }
 
 static inline bool WithinBounds(int row, int col) {
-    return row >= 0 && row < DIM_X &&
-           col >= 0 && col < DIM_Y;
+    return row >= 0 && row < DIM_Y &&
+           col >= 0 && col < DIM_X;
 }
 
 /*
@@ -187,16 +190,79 @@ static void generateHorizontalMoves(Board_t* board, Piece_t* piece, Move_t* move
 }
 
 Move_t* KingMoves(Board_t* board, Piece_t* piece, int* size) {
-    return NULL;
+    CheckType(piece, KING, "Piece is not a Bishop")
+
+    *size = 0;
+    Move_t* moves = AllocMem(MAX_MOVES_KING);
+    Check(moves);
+
+    int directions[8][2] = {
+        {-1, -1}, // up-left
+        {-1,  0}, // up
+        {-1,  1}, // up-right
+        { 0, -1}, // left
+        { 0,  1}, // right
+        { 1, -1}, // down-left
+        { 1,  0}, // down
+        { 1,  1}  // down-right
+    };
+    int row = piece->y, col = piece->x;
+    for(int i = 0; i < 8; i++) {
+        row = piece->y + directions[i][0];
+        col = piece->x + directions[i][1];
+        Piece_t* target = getPiece(board, row, col);
+
+        if(WithinBounds(row, col)) {
+            if(target && target->color == piece->color)
+                continue;
+            InitMoveP(&moves[(*size)++], piece, row, col, 0);
+        }
+    }
+
+    if (*size == 0) {
+        free(moves);
+        return NULL;
+    }
+
+    moves = realloc(moves, (*size) * sizeof(Move_t));
+    if (!moves) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
+        return NULL;
+    }
+
+    return moves;
 }
+
 Move_t* QueenMoves(Board_t* board, Piece_t* piece, int* size) {
-    return NULL;
+    CheckType(piece, QUEEN, "Piece is not a Bishop")
+
+    *size = 0;
+    Move_t* moves = AllocMem(MAX_MOVES_QUEEN);
+    Check(moves);
+
+    generateDiagonalMoves(board, piece, moves, size);
+    generateHorizontalMoves(board, piece, moves, size);
+    generateVerticalMoves(board, piece, moves, size);
+
+    if (*size == 0) {
+        free(moves);
+        return NULL;
+    }
+
+    moves = realloc(moves, (*size) * sizeof(Move_t));
+    if (!moves) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves.");
+        return NULL;
+    }
+
+    return moves;
 }
+
 Move_t* BishopMoves(Board_t* board, Piece_t* piece, int* size) {
     CheckType(piece, BISHOP, "Piece is not a Bishop")
 
     *size = 0;
-    Move_t* moves = AllocMem(13);
+    Move_t* moves = AllocMem(MAX_MOVES_BISHOP);
     Check(moves);
 
     generateDiagonalMoves(board, piece, moves, size);
@@ -219,7 +285,7 @@ Move_t* RookMoves(Board_t* board, Piece_t* piece, int* size) {
     CheckType(piece, ROOK, "Piece is not a rook")
 
     *size = 0;
-    Move_t* moves = AllocMem(14);
+    Move_t* moves = AllocMem(MAX_MOVES_ROOK);
     Check(moves);
 
     generateVerticalMoves(board, piece, moves, size);
@@ -243,7 +309,7 @@ Move_t* KnightMoves(Board_t* board, Piece_t* piece, int* size) {
     CheckType(piece, KNIGHT, "Piece is not a knight")
 
     *size = 0;
-    Move_t* moves = AllocMem(8);
+    Move_t* moves = AllocMem(MAX_MOVES_KNIGHT);
     Check(moves);
 
     int row = piece->y; // row is y
@@ -287,7 +353,7 @@ Move_t* PawnMoves(Board_t* board, Piece_t* piece, int* size) {
     int start_row = (piece->color == WHITE) ? 6 : 1;
     *size = 0;
 
-    Move_t* moves = AllocMem(4);
+    Move_t* moves = AllocMem(MAX_MOVES_PAWN);
     Check(moves);
 
     // forward

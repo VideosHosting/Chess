@@ -14,4 +14,19 @@
 
 #define STARTING_POSITION "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
+
+// Maximum possible moves on an empty board with optimal placement:
+// Pawn   : 4   (move one forward, move two forward, capture left, capture right)
+// Knight : 8
+// Bishop : 13  (diagonally in all directions)
+// Rook   : 14  (horizontally and vertically)
+// Queen  : 27  (combined rook and bishop moves)
+// King   : 8   (one square in any direction)
+#define MAX_MOVES_PAWN   4
+#define MAX_MOVES_KNIGHT 8
+#define MAX_MOVES_BISHOP 13
+#define MAX_MOVES_ROOK   14
+#define MAX_MOVES_QUEEN  27
+#define MAX_MOVES_KING   8
+
 #endif // SETTING_H
