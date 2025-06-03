@@ -93,7 +93,7 @@ int main() {
                             }
 
 
-                            // highlight_coord(row, col);
+                            highlight_coord(row, col);
                         }
                         continue;
                     }
@@ -101,7 +101,7 @@ int main() {
                     movePiece(&board, curPiece, row, col);
                     set_legal_moves(NULL, 0);
                     curPiece = NULL;
-                    // unhighlight_coord();
+                    unhighlight_coord();
                 }
             }
         }
