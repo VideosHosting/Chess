@@ -13,10 +13,13 @@
 //     } \
 //     ptr; \
 // })
+
+// Returns NULL on allocation failure - callers must check return value
 static inline Move_t* AllocMem(size_t size) {
     Move_t* ptr = (Move_t*)malloc(size * sizeof(Move_t));
     if (!ptr) {
         ERROR("Memory allocation failed for %zu moves", size);
+        exit(EXIT_FAILURE);
     }
     return ptr;
 }
