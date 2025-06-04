@@ -4,7 +4,23 @@
 #include "move.h"  // still include public declarations
 
 // Internal-use-only macros
-#define AllocMem(size) ((Move_t*)malloc((size) * sizeof(Move_t)))
+
+// NOT supported by MSVC
+// #define AllocMem(size) ({ \
+//     Move_t* ptr = (Move_t*)malloc((size) * sizeof(Move_t)); \
+//     if (!ptr) { \
+//         ERROR("Memory allocation failed for %zu moves", (size_t)(size)); \
+//     } \
+//     ptr; \
+// })
+static inline Move_t* AllocMem(size_t size) {
+    Move_t* ptr = (Move_t*)malloc(size * sizeof(Move_t));
+    if (!ptr) {
+        ERROR("Memory allocation failed for %zu moves", size);
+    }
+    return ptr;
+}
+
 
 #define CheckType(piece, Type, msg) \
     if ((piece)->type != Type) { \

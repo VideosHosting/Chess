@@ -175,7 +175,7 @@ static inline bool WithinBounds(int row, int col) {
 
 Piece_t* getPiece(Board_t* board, int row, int col) {
     if(!WithinBounds(row, col)) { //avoid out of bounds shit (my stupidity might cause something)
-        ERROR("Attempt to Access out-of-bounds coords row (y): %d, col (x): %d)", row, col);
+        ERROR("Attempt to access out-of-bounds coords row (y): %d, col (x): %d", row, col);
         return NULL;
     }
 
