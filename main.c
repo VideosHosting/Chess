@@ -103,11 +103,14 @@ int main() {
                     //     LOG("King is in check!");
                     // }
                 }
+                
+                break;
 
             case SDL_KEYDOWN:
                 if(event.key.keysym.sym == SDLK_BACKSPACE) {
                     UndoMove(&board);
-                }
+                } 
+                break;
 
 
             case SDL_WINDOWEVENT:
@@ -117,6 +120,7 @@ int main() {
                         event.window.data2);
 
                 }
+                break;
             }
 
         }

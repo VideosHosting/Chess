@@ -330,6 +330,64 @@ void UndoMove(Board_t *board) {
     board->pieces[to] = board->pieces[from];
     board->pieces[from] = temp;
 
+/*
+Critical logic error in UndoMove function implementation.
+The current implementation has several issues:
+
+The from and to indices calculation appears to be swapped (line 322-323)
+The memcpy followed by swap operations are redundant and incorrect
+The function doesn't restore captured pieces or handle special moves (castling, en passant)
+The turn indicator isn't being reverted
+The minimal fix for the basic move reversal would be:
+
+void UndoMove(Board_t *board) {
+     if(board->history.size == 0) return;
+     Move_t* latest = pop(&board->history);
+     
+-    int from =  latest->to_row * DIM_X + latest->to_col;
+-    int to = latest->from_row * DIM_X + latest->from_col;
+-    // Piece_t* target = &board->pieces[latest->from_row * DIM_X + latest->from_col]; // old
+-    // Piece_t* target2 = &board->pieces[latest->to_row * DIM_X + latest->to_col]; // new
+-
+-    SDL_memcpy(board->pieces + to, board->pieces + from, sizeof(Piece_t));
+-
+-    Piece_t temp = board->pieces[to];
+-    board->pieces[to] = board->pieces[from];
+-    board->pieces[from] = temp;
++    int from_idx = latest->from_row * DIM_X + latest->from_col;
++    int to_idx = latest->to_row * DIM_X + latest->to_col;
++    
++    // Move the piece back to its original position
++    board->pieces[from_idx] = board->pieces[to_idx];
++    
++    // Clear the destination square (or restore captured piece if tracking it)
++    board->pieces[to_idx].type = PIECE_NONE;
++    board->pieces[to_idx].texture = NULL;
++    
++    // Update piece coordinates
++    board->pieces[from_idx].x = latest->from_col;
++    board->pieces[from_idx].y = latest->from_row;
++    
++    // Update king position if it was moved
++    if(board->pieces[from_idx].type == KING) {
++        if(board->pieces[from_idx].color == WHITE) {
++            board->WhiteKing = &board->pieces[from_idx];
++        } else {
++            board->BlackKing = &board->pieces[from_idx];
++        }
++    }
++    
++    // Revert the turn
++    board->turn = (board->turn == 'w') ? 'b' : 'w';
+ }
+However, this implementation is still incomplete as it doesn't handle:
+
+Restoring captured pieces
+Special moves (castling, en passant)
+Pawn promotion
+Would you like me to provide a more complete implementation that handles captured pieces and special moves?
+*/
+
 }
 
 void freeBoard(Board_t* board) {
