@@ -86,6 +86,7 @@ int main() {
                                 
                                 set_legal_moves(movelist);
                                 free(movelist.moves);
+
                             } else {
                                 SDL_Log("No legal moves for the selected piece.");
                             }
@@ -93,9 +94,14 @@ int main() {
                         continue;
                     }
 
+
                     movePiece(&board, curPiece, row, col);
                     set_legal_moves((MoveList_t){NULL, 0});
                     curPiece = NULL;
+
+                    if(IsCheck(&board, (board.turn == 'w') ? WHITE : BLACK)) {
+                        LOG("King is in check!");
+                    }
                 }
             }
         }

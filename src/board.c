@@ -5,6 +5,9 @@
 static bool is_highlighted = false;
 static SDL_Rect highlight_area = { .w = COL_SIZE, .h = ROW_SIZE }; 
 
+static Piece_t* WhiteKing = NULL;
+static Piece_t* BlackKing = NULL;
+
 void drawBoard(SDL_Renderer* renderer) {
     SDL_Rect rect;
 
@@ -72,7 +75,7 @@ static PieceType_t GetPieceTypeByLetter(char c) {
 static void loadFen(const char* fen, Board_t* board) {
     SDL_Log("Loading FEN: %s", fen);
     int row = 0, col = 0;
-    int i =0;
+    int i = 0;
 
     for(; fen[i] != '\0' && fen[i] != ' ' && row < DIM_Y; ++i) {
         char c = fen[i];
@@ -108,6 +111,24 @@ static void loadFen(const char* fen, Board_t* board) {
     //TODO: after fetching turn, next is castling, pawn moves, half moves & full moves
 }
 
+static void getKings(Board_t* board) {
+    for(int row = 0; row < DIM_Y; row++) {
+        for(int col = 0; col < DIM_X; col++) {
+            Piece_t* target = getPiece(board, row, col);
+            if(!target || target->type != KING) continue;
+
+            if(target->color == WHITE)
+                WhiteKing = target;
+            else
+                BlackKing = target;
+        }
+    }
+
+    if(!WhiteKing || !BlackKing) {
+        ERROR("King is missing!");
+    }
+}
+
 // Initialize the board with the starting position
 void InitBoard(Board_t* board) {
     return InitBoardFromFen(board, STARTING_POSITION);
@@ -117,6 +138,8 @@ void InitBoardFromFen(Board_t* board, const char* fen) {
     SDL_memset(board->pieces, 0, DIM_X * DIM_Y * sizeof(Piece_t));
 
     loadFen(fen, board);
+
+    getKings(board);
 }
 
 void printBoard(Board_t* board) {
@@ -142,6 +165,33 @@ void printBoard(Board_t* board) {
 static inline bool WithinBounds(int row, int col) {
     return row >= 0 && row < DIM_Y &&
            col >= 0 && col < DIM_X;
+}
+
+MoveList_t getAttackMoves(Board_t*, PieceColor_t);
+
+bool IsCheck(Board_t* board, PieceColor_t color) {
+    if(!WhiteKing || !BlackKing) {
+        ERROR("Both Kings aren't present!");
+        return false;
+    }
+
+    MoveList_t enemy_attacks = getAttackMoves(board,
+                            (color == WHITE) ?BLACK : WHITE);
+    Piece_t* king = (color == WHITE) ? WhiteKing : BlackKing; 
+    LOG("King Coords: (%dx%d)", king->y, king->x);
+    for (int i = 0; i < enemy_attacks.size; i++) {
+        int r = enemy_attacks.moves[i].to_row;
+        int c = enemy_attacks.moves[i].to_col;
+
+        LOG("Checking %dx%d", r, c);
+        if (r == king->y && c == king->x) {
+            free(enemy_attacks.moves);
+            return true; // King is attacked
+        }
+    }
+
+    free(enemy_attacks.moves);
+    return false; // King is safe
 }
 
 Piece_t* getPiece(Board_t* board, int row, int col) {

@@ -4,7 +4,6 @@
 // for highlighting moves
 static MoveList_t legal_moves;
 
-
 // this makes life so much easier
 #define AllocMem(size) (Move_t*)malloc(size * sizeof(Move_t));
 #define CheckType(piece, Type, msg) if((piece)->type != Type) { \
@@ -23,7 +22,6 @@ if(!tmp) {  /* if allocation failed then we just keep it as it is. */ \
 movelist.moves = tmp;
 
 // I'm actually abusing macros 😭🙏🏽🙏🏽🙏🏽
-
 
 static Move_t* copy(MoveList_t* movelist) {
     Move_t* copy = AllocMem(movelist->size)
@@ -103,7 +101,8 @@ void AddMove(MoveList_t* movelist, Move_t* moves, size_t* size) {
     int new_size = movelist->size + *size;
     Move_t* new_moves = AllocMem(new_size);
 
-    SDL_memcpy(new_moves, movelist->moves, movelist->size * sizeof(Move_t));
+    if(movelist->moves)
+        SDL_memcpy(new_moves, movelist->moves, movelist->size * sizeof(Move_t));
 
     for (int i = 0; i < *size; i++) {
         new_moves[i+movelist->size] = moves[i];
@@ -237,8 +236,58 @@ static void generateHorizontalMoves(Board_t* board, Piece_t* piece, MoveList_t* 
     }
 }
 
+static MoveList_t getPawnAttackMoves(Board_t* board, Piece_t* piece) {
+    MoveList_t movelist;
+    movelist.size = 0;
+
+    movelist.moves = AllocMem(MAX_MOVES_PAWN);
+    Check(movelist.moves);
+
+    int direction = (piece->color == WHITE) ? -1 : 1;
+    
+    // Capture left
+    if(piece->x > 0 && piece->y + direction >= 0 && piece->y + direction < DIM_Y) {
+            InitMoveP(&movelist.moves[movelist.size++], piece, piece->y + direction, piece->x - 1, 0);
+    }
+
+    // Capture right
+    if(piece->x < DIM_X - 1 && piece->y + direction >= 0 && piece->y + direction < DIM_Y) {
+            InitMoveP(&movelist.moves[movelist.size++], piece, piece->y + direction, piece->x + 1, 0);
+    }
+
+    return movelist;
+}
+
+MoveList_t getAttackMoves(Board_t* board, PieceColor_t color) {
+    MoveList_t finalMoves = {NULL, 0};
+
+    for(int row = 0; row < DIM_Y; row++) {
+        for(int col = 0; col < DIM_X; col++) {
+            Piece_t* target = getPiece(board, row, col);
+
+            // refuse if: empty square, wrong color, or its a king
+            if(!target || target->color != color || target->type == KING)
+                //TODO: Add pawn attack moves later
+                continue;
+            
+            MoveList_t moves;
+
+            if(target->type == PAWN)
+                moves = getPawnAttackMoves(board, target);
+            else
+                moves = getLegalMoves(board, target);
+
+            AddMoveM(&finalMoves, moves);
+
+            free(moves.moves);
+        }
+    }
+
+    return finalMoves;
+}
+
 MoveList_t KingMoves(Board_t* board, Piece_t* piece) {
-    CheckType(piece, KING, "Piece is not a Bishop")
+    CheckType(piece, KING, "Piece is not a King")
 
     MoveList_t movelist;
     movelist.size = 0;
@@ -246,31 +295,36 @@ MoveList_t KingMoves(Board_t* board, Piece_t* piece) {
     movelist.moves = AllocMem(MAX_MOVES_KING);
     Check(movelist.moves);
 
-
     int directions[8][2] = {
-        {-1, -1}, // up-left
-        {-1,  0}, // up
-        {-1,  1}, // up-right
-        { 0, -1}, // left
-        { 0,  1}, // right
-        { 1, -1}, // down-left
-        { 1,  0}, // down
-        { 1,  1}  // down-right
+        {-1, -1}, {-1, 0}, {-1, 1},
+        { 0, -1},          { 0, 1},
+        { 1, -1}, { 1, 0}, { 1, 1}
     };
+
+    // bool danger_map[DIM_Y][DIM_X] = {0};
+    // MoveList_t enemy_moves = getAttackMoves(board,  (piece->color == WHITE) ? BLACK : WHITE);
+    // for(int i = 0; i < enemy_moves.size; i++) {
+    //     int r = enemy_moves.moves[i].to_row;
+    //     int c = enemy_moves.moves[i].to_col;
+
+    //     danger_map[r][c] = true;
+    // }
+
+    // free(enemy_moves.moves);
 
     int row = piece->y, col = piece->x;
     for(int i = 0; i < 8; i++) {
         row = piece->y + directions[i][0];
         col = piece->x + directions[i][1];
 
-        if(WithinBounds(row, col)) {
-            Piece_t* target = getPiece(board, row, col);
+        if(!WithinBounds(row, col)) continue;
 
-            if(target && target->color == piece->color)
-                continue;
+        Piece_t* target = getPiece(board, row, col);
+        if(target && target->color == piece->color) continue;
 
+        // if(!danger_map[row][col]) {
             InitMoveP(&movelist.moves[movelist.size++], piece, row, col, 0);
-        }
+        // }
     }
 
     if (movelist.size == 0) {
@@ -284,7 +338,7 @@ MoveList_t KingMoves(Board_t* board, Piece_t* piece) {
 }
 
 MoveList_t QueenMoves(Board_t* board, Piece_t* piece) {
-    CheckType(piece, QUEEN, "Piece is not a Bishop")
+    CheckType(piece, QUEEN, "Piece is not a Queen")
 
     MoveList_t movelist;
     movelist.size = 0;
@@ -332,7 +386,7 @@ MoveList_t BishopMoves(Board_t* board, Piece_t* piece) {
 }
 
 MoveList_t RookMoves(Board_t* board, Piece_t* piece) {
-    CheckType(piece, ROOK, "Piece is not a rook")
+    CheckType(piece, ROOK, "Piece is not a Rook")
 
     MoveList_t movelist;
     movelist.size = 0;
@@ -353,7 +407,7 @@ MoveList_t RookMoves(Board_t* board, Piece_t* piece) {
 }
 
 MoveList_t KnightMoves(Board_t* board, Piece_t* piece) {
-    CheckType(piece, KNIGHT, "Piece is not a knight")
+    CheckType(piece, KNIGHT, "Piece is not a Knight")
 
     MoveList_t movelist;
     movelist.size = 0;
@@ -398,7 +452,7 @@ MoveList_t KnightMoves(Board_t* board, Piece_t* piece) {
 }
 
 MoveList_t PawnMoves(Board_t* board, Piece_t* piece) {
-    CheckType(piece, PAWN, "Piece is not a pawn")
+    CheckType(piece, PAWN, "Piece is not a Pawn")
 
     MoveList_t movelist;
     movelist.size = 0;

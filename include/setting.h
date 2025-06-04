@@ -29,4 +29,9 @@
 #define MAX_MOVES_QUEEN  27
 #define MAX_MOVES_KING   8
 
+
+#define LOG(msg, ...) SDL_Log(msg, ##__VA_ARGS__)
+#define ERROR(msg, ...) SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, msg, ##__VA_ARGS__)
+#define WARNING(msg, ...) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, msg, ##__VA_ARGS__)
+
 #endif // SETTING_H
