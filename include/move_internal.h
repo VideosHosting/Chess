@@ -1,0 +1,29 @@
+#ifndef MOVE_INTERNAL_H
+#define MOVE_INTERNAL_H
+
+#include "move.h"  // still include public declarations
+
+// Internal-use-only macros
+#define AllocMem(size) ((Move_t*)malloc((size) * sizeof(Move_t)))
+
+#define CheckType(piece, Type, msg) \
+    if ((piece)->type != Type) { \
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", msg); \
+        return (MoveList_t){NULL, 0}; \
+    }
+
+#define Check(moves) \
+    if (!(moves)) { \
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory allocation failed for moves."); \
+        return (MoveList_t){NULL, 0}; \
+    }
+
+#define ReAllocAttempt(movelist) \
+    Move_t* tmp = realloc((movelist).moves, (movelist).size * sizeof(Move_t)); \
+    if (!tmp) { \
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves"); \
+        return movelist; \
+    } \
+    (movelist).moves = tmp;
+
+#endif // MOVE_INTERNAL_H

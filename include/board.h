@@ -11,6 +11,9 @@ typedef struct Board {
     Piece_t pieces[DIM_X * DIM_Y];
     char turn;
 
+    Piece_t* WhiteKing;
+    Piece_t* BlackKing;
+    
     MoveList_t history;
 } Board_t;
 
@@ -33,9 +36,9 @@ void printBoard(Board_t* board);
 
 // Board manipulation
 Piece_t* getPiece(Board_t* board, int row, int col);
-void UndoMove();
 void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol);
 void getFEN(Board_t* board, char buffer[]);
+void UndoMove(Board_t* board);
 
 bool IsCheck(Board_t* board, PieceColor_t color);
 

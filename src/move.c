@@ -1,30 +1,31 @@
 #include "move.h"
+#include "move_internal.h"
 #include "board.h"
 
 // for highlighting moves
 static MoveList_t legal_moves;
 
 // this makes life so much easier
-#define AllocMem(size) (Move_t*)malloc(size * sizeof(Move_t));
-#define CheckType(piece, Type, msg) if((piece)->type != Type) { \
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", msg); \
-    return (MoveList_t){NULL, 0}; \
-}
-#define Check(moves) if(!moves) { \
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Memory allocation failed for moves."); \
-    return (MoveList_t){NULL, 0}; \
-}
-#define ReAllocAttempt(movelist) Move_t* tmp = realloc(movelist.moves, movelist.size * sizeof(Move_t)); \
-if(!tmp) {  /* if allocation failed then we just keep it as it is. */ \
-    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Memory reallocation failed for moves"); \
-    return movelist; \
-} \
-movelist.moves = tmp;
+// #define AllocMem(size) (Move_t*)malloc(size * sizeof(Move_t));
+// #define CheckType(piece, Type, msg) if((piece)->type != Type) { \
+//     ERROR("%s", msg); \
+//     return (MoveList_t){NULL, 0}; \
+// }
+// #define Check(moves) if(!moves) { \
+//     ERROR("Memory allocation failed for moves."); \
+//     return (MoveList_t){NULL, 0}; \
+// }
+// #define ReAllocAttempt(movelist) Move_t* tmp = realloc(movelist.moves, movelist.size * sizeof(Move_t)); \
+// if(!tmp) {  /* if allocation failed then we just keep it as it is. */ \
+//     ERROR("Memory reallocation failed for moves"); \
+//     return movelist; \
+// } \
+// movelist.moves = tmp;
 
 // I'm actually abusing macros 😭🙏🏽🙏🏽🙏🏽
 
 static Move_t* copy(MoveList_t* movelist) {
-    Move_t* copy = AllocMem(movelist->size)
+    Move_t* copy = AllocMem(movelist->size);
     if(copy == NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for move copy.");
         return NULL;
@@ -100,6 +101,11 @@ void InitMove(Move_t* move, int from_row, int from_col, int to_row, int to_col, 
 void AddMove(MoveList_t* movelist, Move_t* moves, size_t* size) {
     int new_size = movelist->size + *size;
     Move_t* new_moves = AllocMem(new_size);
+    if(!new_moves) {
+        ERROR("Failed to allocate memory for AddMove");
+        return;
+    }
+    // Check(new_moves);
 
     if(movelist->moves)
         SDL_memcpy(new_moves, movelist->moves, movelist->size * sizeof(Move_t));
@@ -112,15 +118,6 @@ void AddMove(MoveList_t* movelist, Move_t* moves, size_t* size) {
 
     movelist->moves = new_moves;
     movelist->size = new_size;
-    /*AddMove ignores allocation failure
-If malloc returns NULL, the subsequent SDL_memcpy dereferences it, causing UB. Add an explicit check consistent with the rest of the file.
-
-Move_t* new_moves = AllocMem(new_size);
-+if (!new_moves) {
-+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-+                 "Failed to allocate memory for moves");
-+    return;
-+}*/
 }
 
 void AddMoveM(MoveList_t* movelist, MoveList_t movelist2) {
@@ -243,68 +240,6 @@ static void generateHorizontalMoves(Board_t* board, Piece_t* piece, MoveList_t* 
             col += dir;
         }
     }
-}
-
-static MoveList_t getPawnAttackMoves(Board_t* board, Piece_t* piece) {
-    MoveList_t movelist;
-    movelist.size = 0;
-
-    movelist.moves = AllocMem(MAX_MOVES_PAWN);
-    Check(movelist.moves);
-
-    int direction = (piece->color == WHITE) ? -1 : 1;
-    
-    // Capture left
-    if(piece->x > 0 && piece->y + direction >= 0 && piece->y + direction < DIM_Y) {
-            InitMoveP(&movelist.moves[movelist.size++], piece, piece->y + direction, piece->x - 1, 0);
-    }
-
-    // Capture right
-    if(piece->x < DIM_X - 1 && piece->y + direction >= 0 && piece->y + direction < DIM_Y) {
-            InitMoveP(&movelist.moves[movelist.size++], piece, piece->y + direction, piece->x + 1, 0);
-    }
-
-    return movelist;
-    /*
-    Memory leak when pawn has zero diagonal attacks
-getPawnAttackMoves always allocates, but if the pawn is on a file edge (with no capture squares) movelist.size stays 0 and the buffer is never freed, unlike other generators.
-
-return movelist;
-+
-+    /* unreachable *
-+    if (movelist.size == 0) {
-+        free(movelist.moves);
-+        return (MoveList_t){NULL, 0};
-+    }
-*/
-}
-
-MoveList_t getAttackMoves(Board_t* board, PieceColor_t color) {
-    MoveList_t finalMoves = {NULL, 0};
-
-    for(int row = 0; row < DIM_Y; row++) {
-        for(int col = 0; col < DIM_X; col++) {
-            Piece_t* target = getPiece(board, row, col);
-
-            // refuse if: empty square, wrong color, or its a king
-            if(!target || target->color != color || target->type == KING)
-                //TODO: Add pawn attack moves later
-                continue;
-            
-            MoveList_t moves;
-
-            if(target->type == PAWN)
-                moves = getPawnAttackMoves(board, target);
-            else
-                moves = getLegalMoves(board, target);
-
-            AddMoveM(&finalMoves, moves);
-
-            free(moves.moves);
-        }
-    }
-
-    return finalMoves;
 }
 
 MoveList_t KingMoves(Board_t* board, Piece_t* piece) {

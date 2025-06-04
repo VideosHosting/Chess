@@ -99,9 +99,9 @@ int main() {
                     set_legal_moves((MoveList_t){NULL, 0});
                     curPiece = NULL;
 
-                    if(IsCheck(&board, (board.turn == 'w') ? WHITE : BLACK)) {
-                        LOG("King is in check!");
-                    }
+                    // if(IsCheck(&board, WHITE)) {
+                    //     LOG("King is in check!");
+                    // }
                 }
             }
         }

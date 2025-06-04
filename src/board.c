@@ -5,21 +5,6 @@
 static bool is_highlighted = false;
 static SDL_Rect highlight_area = { .w = COL_SIZE, .h = ROW_SIZE }; 
 
-/* TODO: move these inside `Board_t` (or at least recompute each turn)
- * to avoid dangling pointers and multi-board interference. */
-static Piece_t* WhiteKing = NULL;
-static Piece_t* BlackKing = NULL;
-/*
-Static king pointers will go stale and break IsCheck after any king move
-WhiteKing / BlackKing point to the current Piece_t structs.
-When a king moves, movePiece vacates the original square (setting its type = PIECE_NONE) and re-uses a different struct for the new square. The cached pointer therefore starts referencing an empty square, so IsCheck silently mis-reports the position.
-Static globals also prevent having more than one Board_t instance.
-
--static Piece_t* WhiteKing = NULL;
--static Piece_t* BlackKing = NULL;
-+/* TODO: move these inside `Board_t` (or at least recompute each turn)
-+ * to avoid dangling pointers and multi-board interference. */
-
 void drawBoard(SDL_Renderer* renderer) {
     SDL_Rect rect;
 
@@ -111,7 +96,7 @@ static void loadFen(const char* fen, Board_t* board) {
     }
 
     if(row < DIM_Y - 1 || col < DIM_X - 1) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "FEN string did not fill the board properly. Expected %dx%d rows, got %dx%d.", DIM_X, DIM_Y, row + 1, col + 1);
+        WARN("FEN string did not fill the board properly. Expected %dx%d rows, got %dx%d.", DIM_X, DIM_Y, row + 1, col + 1);
     }
 
     if(fen[i] == '\0') {
@@ -125,8 +110,6 @@ static void loadFen(const char* fen, Board_t* board) {
 
 static void getKings(Board_t* board) {
     /* reset cached pointers before scanning */
-    WhiteKing = NULL;
-    BlackKing = NULL;
     
     for(int row = 0; row < DIM_Y; row++) {
         for(int col = 0; col < DIM_X; col++) {
@@ -134,24 +117,15 @@ static void getKings(Board_t* board) {
             if(!target || target->type != KING) continue;
 
             if(target->color == WHITE)
-                WhiteKing = target;
+                board->WhiteKing = target;
             else
-                BlackKing = target;
+                board->BlackKing = target;
         }
     }
 
-    if(!WhiteKing || !BlackKing) {
+    if(!board->WhiteKing || !board->BlackKing) {
         ERROR("King is missing!");
     }
-/*
-getKings does not purge previous state → stale pointers after FEN reload
-If InitBoardFromFen is called twice (new game, undo, etc.) the old king pointers survive when the colour is missing, bypassing the ERROR() guard and again corrupting IsCheck.
-
-static void getKings(Board_t* board) {
-+    /* reset cached pointers before scanning 
-+    WhiteKing = NULL;
-+    BlackKing = NULL;
-*/
 }
 
 // Initialize the board with the starting position
@@ -160,23 +134,21 @@ void InitBoard(Board_t* board) {
 }
 
 void InitBoardFromFen(Board_t* board, const char* fen) {
+    board->WhiteKing = NULL;
+    board->BlackKing = NULL;
+    board->history.moves = NULL;
+    board->history.size = 0;
+    
     SDL_memset(board->pieces, 0, DIM_X * DIM_Y * sizeof(Piece_t));
 
     loadFen(fen, board);
 
     getKings(board);
-
-    /*
-    King cache never updated after moves
-getKings is only invoked from InitBoardFromFen; once the game starts the pointers are never refreshed.
-Minimal fix: call getKings inside movePiece whenever piece->type == KING, or recompute king coordinates on demand.
-Prefer long-term: embed king coordinates/pointers in Board_t.
-*/
 }
 
 void printBoard(Board_t* board) {
     if(!board || !board->pieces) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Board or pieces are NULL. Cannot print board.");
+        ERROR("Board or pieces are NULL. Cannot print board.");
         return;
     }
 
@@ -199,36 +171,11 @@ static inline bool WithinBounds(int row, int col) {
            col >= 0 && col < DIM_X;
 }
 
-MoveList_t getAttackMoves(Board_t*, PieceColor_t);
-
-bool IsCheck(Board_t* board, PieceColor_t color) {
-    if(!WhiteKing || !BlackKing) {
-        ERROR("Both Kings aren't present!");
-        return false;
-    }
-
-    MoveList_t enemy_attacks = getAttackMoves(board,
-                            (color == WHITE) ?BLACK : WHITE);
-    Piece_t* king = (color == WHITE) ? WhiteKing : BlackKing; 
-    LOG("King Coords: (%dx%d)", king->y, king->x);
-    for (int i = 0; i < enemy_attacks.size; i++) {
-        int r = enemy_attacks.moves[i].to_row;
-        int c = enemy_attacks.moves[i].to_col;
-
-        LOG("Checking %dx%d", r, c);
-        if (r == king->y && c == king->x) {
-            free(enemy_attacks.moves);
-            return true; // King is attacked
-        }
-    }
-
-    free(enemy_attacks.moves);
-    return false; // King is safe
-}
+// MoveList_t getAttackMoves(Board_t*, PieceColor_t);
 
 Piece_t* getPiece(Board_t* board, int row, int col) {
     if(!WithinBounds(row, col)) { //avoid out of bounds shit (my stupidity might cause something)
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Attempt to Access out-of-bounds coords row (y): %d, col (x): %d)", row, col);
+        ERROR("Attempt to Access out-of-bounds coords row (y): %d, col (x): %d)", row, col);
         return NULL;
     }
 
@@ -263,6 +210,8 @@ void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol) {
     if(nPiece->type != PIECE_NONE) {
         freePieceTexture(nPiece);
     }
+
+    // SDL_memcpy(nPiece, piece, sizeof(Piece_t));
     
     nPiece->type = PIECE_NONE;
 
@@ -279,11 +228,21 @@ void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol) {
     piece->y = -1;
 
     board->turn = (board->turn == 'w') ? 'b' : 'w';
+
+    if(nPiece->type == KING) {
+        if(nPiece->color == WHITE) {
+            board->WhiteKing = nPiece;
+        } else {
+            board->BlackKing = nPiece;
+        }
+    }
+
+    AddMoveM(&board->history, (MoveList_t){&move, 1});
 }
 
 bool loadPieceTextures(SDL_Renderer* renderer, Board_t* board) {
     if(!board || !board->pieces) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Board or pieces are NULL. Cannot load piece textures.");
+        ERROR("Board or pieces are NULL. Cannot load piece textures.");
         return false;
     }
 
@@ -294,7 +253,7 @@ bool loadPieceTextures(SDL_Renderer* renderer, Board_t* board) {
 
             if(piece->texture == NULL) {
 
-                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load texture for piece at (%d, %d).", piece->x, piece->y);
+                ERROR("Failed to load texture for piece at (%d, %d).", piece->x, piece->y);
                 return false;
 
             }
@@ -306,7 +265,7 @@ bool loadPieceTextures(SDL_Renderer* renderer, Board_t* board) {
 
 void drawPieces(SDL_Renderer* renderer, Board_t* board) {
     if(!board || !board->pieces) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Board or pieces are NULL. Cannot draw pieces.");
+        ERROR("Board or pieces are NULL. Cannot draw pieces.");
         return;
     }
 
@@ -345,14 +304,18 @@ void getFEN(Board_t* board, char buffer[]) {
     buffer[size] = '\0';
 }
 
+void UndoMove(Board_t *board) {
+    board->history;
+}
+
 void freeBoard(Board_t* board) {
     if(!board) return;
 
-    if(board->pieces) {
-        for(int i = 0; i < DIM_X * DIM_Y; i++) {
-            if(board->pieces[i].texture) {
+    if(board->pieces)
+        for(int i = 0; i < DIM_X * DIM_Y; i++)
+            if(board->pieces[i].texture)
                 freePieceTexture(&board->pieces[i]);
-            }
-        }
-    }
+
+    if(board->history.moves)
+        free(board->history.moves);
 }
