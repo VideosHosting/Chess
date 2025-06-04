@@ -103,7 +103,22 @@ int main() {
                     //     LOG("King is in check!");
                     // }
                 }
+
+            case SDL_KEYDOWN:
+                if(event.key.keysym.sym == SDLK_BACKSPACE) {
+                    UndoMove(&board);
+                }
+
+
+            case SDL_WINDOWEVENT:
+                if(event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+                    printf("Window dimensions Width: %d  Height: %d\n", 
+                        event.window.data1, 
+                        event.window.data2);
+
+                }
             }
+
         }
 
 

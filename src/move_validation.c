@@ -10,7 +10,7 @@
     * we can sacrifce some memory for performance
 */
 
-// will hold 
+// will hold current player's legal moves.
 static MoveList_t LegalMoves;
 
 static bool inline MoveEqual(Move_t* move1, Move_t* move2) {

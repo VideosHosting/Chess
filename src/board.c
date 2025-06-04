@@ -304,8 +304,32 @@ void getFEN(Board_t* board, char buffer[]) {
     buffer[size] = '\0';
 }
 
+static Move_t* pop(MoveList_t* history) {
+    int lastOffset = history->size - 1;
+
+    Move_t* latest = history->moves + lastOffset;
+
+    history->size -= 1;
+    // history->moves + lastOffset = NULL;
+
+    return latest;
+}
+
 void UndoMove(Board_t *board) {
-    board->history;
+    if(board->history.size == 0) return;
+    Move_t* latest = pop(&board->history);
+    
+    int from =  latest->to_row * DIM_X + latest->to_col;
+    int to = latest->from_row * DIM_X + latest->from_col;
+    // Piece_t* target = &board->pieces[latest->from_row * DIM_X + latest->from_col]; // old
+    // Piece_t* target2 = &board->pieces[latest->to_row * DIM_X + latest->to_col]; // new
+
+    SDL_memcpy(board->pieces + to, board->pieces + from, sizeof(Piece_t));
+
+    Piece_t temp = board->pieces[to];
+    board->pieces[to] = board->pieces[from];
+    board->pieces[from] = temp;
+
 }
 
 void freeBoard(Board_t* board) {
