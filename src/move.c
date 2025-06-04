@@ -112,6 +112,15 @@ void AddMove(MoveList_t* movelist, Move_t* moves, size_t* size) {
 
     movelist->moves = new_moves;
     movelist->size = new_size;
+    /*AddMove ignores allocation failure
+If malloc returns NULL, the subsequent SDL_memcpy dereferences it, causing UB. Add an explicit check consistent with the rest of the file.
+
+Move_t* new_moves = AllocMem(new_size);
++if (!new_moves) {
++    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
++                 "Failed to allocate memory for moves");
++    return;
++}*/
 }
 
 void AddMoveM(MoveList_t* movelist, MoveList_t movelist2) {
@@ -256,6 +265,18 @@ static MoveList_t getPawnAttackMoves(Board_t* board, Piece_t* piece) {
     }
 
     return movelist;
+    /*
+    Memory leak when pawn has zero diagonal attacks
+getPawnAttackMoves always allocates, but if the pawn is on a file edge (with no capture squares) movelist.size stays 0 and the buffer is never freed, unlike other generators.
+
+return movelist;
++
++    /* unreachable *
++    if (movelist.size == 0) {
++        free(movelist.moves);
++        return (MoveList_t){NULL, 0};
++    }
+*/
 }
 
 MoveList_t getAttackMoves(Board_t* board, PieceColor_t color) {

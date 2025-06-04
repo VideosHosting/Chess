@@ -5,8 +5,20 @@
 static bool is_highlighted = false;
 static SDL_Rect highlight_area = { .w = COL_SIZE, .h = ROW_SIZE }; 
 
+/* TODO: move these inside `Board_t` (or at least recompute each turn)
+ * to avoid dangling pointers and multi-board interference. */
 static Piece_t* WhiteKing = NULL;
 static Piece_t* BlackKing = NULL;
+/*
+Static king pointers will go stale and break IsCheck after any king move
+WhiteKing / BlackKing point to the current Piece_t structs.
+When a king moves, movePiece vacates the original square (setting its type = PIECE_NONE) and re-uses a different struct for the new square. The cached pointer therefore starts referencing an empty square, so IsCheck silently mis-reports the position.
+Static globals also prevent having more than one Board_t instance.
+
+-static Piece_t* WhiteKing = NULL;
+-static Piece_t* BlackKing = NULL;
++/* TODO: move these inside `Board_t` (or at least recompute each turn)
++ * to avoid dangling pointers and multi-board interference. */
 
 void drawBoard(SDL_Renderer* renderer) {
     SDL_Rect rect;
@@ -112,6 +124,10 @@ static void loadFen(const char* fen, Board_t* board) {
 }
 
 static void getKings(Board_t* board) {
+    /* reset cached pointers before scanning */
+    WhiteKing = NULL;
+    BlackKing = NULL;
+    
     for(int row = 0; row < DIM_Y; row++) {
         for(int col = 0; col < DIM_X; col++) {
             Piece_t* target = getPiece(board, row, col);
@@ -127,6 +143,15 @@ static void getKings(Board_t* board) {
     if(!WhiteKing || !BlackKing) {
         ERROR("King is missing!");
     }
+/*
+getKings does not purge previous state → stale pointers after FEN reload
+If InitBoardFromFen is called twice (new game, undo, etc.) the old king pointers survive when the colour is missing, bypassing the ERROR() guard and again corrupting IsCheck.
+
+static void getKings(Board_t* board) {
++    /* reset cached pointers before scanning 
++    WhiteKing = NULL;
++    BlackKing = NULL;
+*/
 }
 
 // Initialize the board with the starting position
@@ -140,6 +165,13 @@ void InitBoardFromFen(Board_t* board, const char* fen) {
     loadFen(fen, board);
 
     getKings(board);
+
+    /*
+    King cache never updated after moves
+getKings is only invoked from InitBoardFromFen; once the game starts the pointers are never refreshed.
+Minimal fix: call getKings inside movePiece whenever piece->type == KING, or recompute king coordinates on demand.
+Prefer long-term: embed king coordinates/pointers in Board_t.
+*/
 }
 
 void printBoard(Board_t* board) {
