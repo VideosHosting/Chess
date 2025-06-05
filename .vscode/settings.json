@@ -1,0 +1,21 @@
+{
+    "files.associations": {
+        "bit": "c",
+        "cctype": "c",
+        "cfloat": "c",
+        "cmath": "c",
+        "compare": "c",
+        "concepts": "c",
+        "cstdarg": "c",
+        "cstdio": "c",
+        "cstdlib": "c",
+        "cwchar": "c",
+        "type_traits": "c",
+        "limits": "c",
+        "new": "c",
+        "cinttypes": "c",
+        "cstdbool": "c",
+        "cstdint": "c",
+        "typeinfo": "c"
+    }
+}

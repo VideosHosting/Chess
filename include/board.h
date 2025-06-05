@@ -8,13 +8,18 @@
 #include "move.h"
 
 typedef struct Board {
-    Piece_t pieces[DIM_X * DIM_Y];
+    Piece_t* pieces;//[DIM_X * DIM_Y];
     char turn;
 
     Piece_t* WhiteKing;
     Piece_t* BlackKing;
     
-    MoveList_t history;
+    struct {
+        Piece_t** history_state; // saving piece states
+        size_t history_size;
+        size_t real_history_size;
+    } History;
+
 } Board_t;
 
 // Initialization functions

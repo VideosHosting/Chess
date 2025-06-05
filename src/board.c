@@ -136,8 +136,10 @@ void InitBoard(Board_t* board) {
 void InitBoardFromFen(Board_t* board, const char* fen) {
     board->WhiteKing = NULL;
     board->BlackKing = NULL;
-    board->history.moves = NULL;
-    board->history.size = 0;
+    board->History.history_size = 0; // preallocate 20. most chess games end i
+    board->History.real_history_size = 20;
+    board->History.history_state = malloc(sizeof(Piece_t*) * board->History.real_history_size);
+    board->pieces = malloc(sizeof(Piece_t)*DIM_X*DIM_Y);
     
     SDL_memset(board->pieces, 0, DIM_X * DIM_Y * sizeof(Piece_t));
 
@@ -186,6 +188,17 @@ Piece_t* getPiece(Board_t* board, int row, int col) {
     }
 
     return piece;
+}
+
+static Piece_t* copyP(Piece_t* piece) {
+    size_t size = sizeof(Piece_t) * DIM_X * DIM_Y;
+    Piece_t* new_piece = malloc(size);
+    if(!new_piece) {
+        return NULL;
+    }
+
+    SDL_memcpy(new_piece, piece, size);
+    return new_piece;
 }
 
 void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol) {
@@ -237,7 +250,22 @@ void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol) {
         }
     }
 
-    AddMoveM(&board->history, (MoveList_t){&move, 1});
+
+    if(board->History.history_size == board->History.real_history_size) {
+        // we need more space
+        board->History.real_history_size += 4;
+        Piece_t** tmp = realloc(
+            board->History.history_state,
+            sizeof(Piece_t*) * board->History.real_history_size
+        );
+        if(!tmp) {
+            ERROR("Failed to reallocate memory for history state");
+            return;
+        }
+        board->History.history_state = tmp;
+    }
+
+    board->History.history_state[board->History.history_size++] = copyP(board->pieces);
 }
 
 bool loadPieceTextures(SDL_Renderer* renderer, Board_t* board) {
@@ -304,31 +332,33 @@ void getFEN(Board_t* board, char buffer[]) {
     buffer[size] = '\0';
 }
 
-static Move_t* pop(MoveList_t* history) {
-    int lastOffset = history->size - 1;
-
-    Move_t* latest = history->moves + lastOffset;
-
-    history->size -= 1;
-    // history->moves + lastOffset = NULL;
-
-    return latest;
-}
-
 void UndoMove(Board_t *board) {
-    if(board->history.size == 0) return;
-    Move_t* latest = pop(&board->history);
+    if(board->History.history_size == 0) {
+        return;
+    }
+
+    int size = --board->History.history_size;
+    Piece_t* latest = board->History.history_state[size];
     
-    int from =  latest->to_row * DIM_X + latest->to_col;
-    int to = latest->from_row * DIM_X + latest->from_col;
-    // Piece_t* target = &board->pieces[latest->from_row * DIM_X + latest->from_col]; // old
-    // Piece_t* target2 = &board->pieces[latest->to_row * DIM_X + latest->to_col]; // new
+    free(board->pieces);
+    board->pieces = latest;
+    
+    // board[--board->History.history_size];
+    // if(board->history.size == 0) return;
 
-    SDL_memcpy(board->pieces + to, board->pieces + from, sizeof(Piece_t));
 
-    Piece_t temp = board->pieces[to];
-    board->pieces[to] = board->pieces[from];
-    board->pieces[from] = temp;
+    // Move_t* latest = pop(&board->history);
+    
+    // int from =  latest->to_row * DIM_X + latest->to_col;
+    // int to = latest->from_row * DIM_X + latest->from_col;
+    // // Piece_t* target = &board->pieces[latest->from_row * DIM_X + latest->from_col]; // old
+    // // Piece_t* target2 = &board->pieces[latest->to_row * DIM_X + latest->to_col]; // new
+
+    // SDL_memcpy(board->pieces + to, board->pieces + from, sizeof(Piece_t));
+
+    // Piece_t temp = board->pieces[to];
+    // board->pieces[to] = board->pieces[from];
+    // board->pieces[from] = temp;
 
 /*
 Critical logic error in UndoMove function implementation.
@@ -382,7 +412,7 @@ void UndoMove(Board_t *board) {
  }
 However, this implementation is still incomplete as it doesn't handle:
 
-Restoring captured pieces
+Restoring captured pieces 
 Special moves (castling, en passant)
 Pawn promotion
 Would you like me to provide a more complete implementation that handles captured pieces and special moves?
@@ -398,6 +428,6 @@ void freeBoard(Board_t* board) {
             if(board->pieces[i].texture)
                 freePieceTexture(&board->pieces[i]);
 
-    if(board->history.moves)
-        free(board->history.moves);
+    if(board->History.real_history_size != 0)
+        free(board->History.history_state);
 }

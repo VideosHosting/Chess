@@ -2,7 +2,6 @@
 #define PIECE_H
 #include <SDL2/SDL.h>
 
-
 typedef enum PieceType {
     PIECE_NONE = 0,
     PAWN = 'p',
@@ -19,7 +18,7 @@ typedef enum PieceColor {
 } PieceColor_t;
 
 typedef struct Piece {
-    int x, y;
+    unsigned int x, y;
     SDL_Texture* texture; // Pointer to the texture for rendering the piece
     PieceType_t type; // Type of the piece (e.g., pawn, knight, etc.)
     PieceColor_t color; // Color of the piece (e.g., white or black)
