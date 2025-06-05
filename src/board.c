@@ -140,6 +140,10 @@ void InitBoardFromFen(Board_t* board, const char* fen) {
     board->History.real_history_size = 20;
     board->History.history_state = malloc(sizeof(Piece_t*) * board->History.real_history_size);
     board->pieces = malloc(sizeof(Piece_t)*DIM_X*DIM_Y);
+    if(!board->pieces) {
+        ERROR("Failed to allocate memory for pieces.");
+        return;
+    }
     
     SDL_memset(board->pieces, 0, DIM_X * DIM_Y * sizeof(Piece_t));
 
@@ -198,6 +202,7 @@ static Piece_t* copyP(Piece_t* piece) {
     }
 
     SDL_memcpy(new_piece, piece, size);
+    
     return new_piece;
 }
 
@@ -250,18 +255,17 @@ void movePiece(Board_t* board, Piece_t* piece, int nrow, int ncol) {
         }
     }
 
-
     if(board->History.history_size == board->History.real_history_size) {
         // we need more space
-        board->History.real_history_size += 4;
         Piece_t** tmp = realloc(
             board->History.history_state,
-            sizeof(Piece_t*) * board->History.real_history_size
+            sizeof(Piece_t*) * (board->History.real_history_size + 4)
         );
         if(!tmp) {
             ERROR("Failed to reallocate memory for history state");
             return;
         }
+        board->History.real_history_size += 4;
         board->History.history_state = tmp;
     }
 
@@ -339,10 +343,14 @@ void UndoMove(Board_t *board) {
 
     int size = --board->History.history_size;
     Piece_t* latest = board->History.history_state[size];
+
+    free(board->pieces);               /* free current snapshot */
+    board->pieces = latest;            /* install previous */
+
+    board->History.history_state[size] = NULL;  /* prevent double free */
+    board->turn = (board->turn == 'w') ? 'b' : 'w';
     
-    free(board->pieces);
-    board->pieces = latest;
-    
+    getKings(board);
     // board[--board->History.history_size];
     // if(board->history.size == 0) return;
 

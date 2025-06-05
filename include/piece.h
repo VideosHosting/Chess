@@ -18,7 +18,7 @@ typedef enum PieceColor {
 } PieceColor_t;
 
 typedef struct Piece {
-    unsigned int x, y;
+    int x, y;
     SDL_Texture* texture; // Pointer to the texture for rendering the piece
     PieceType_t type; // Type of the piece (e.g., pawn, knight, etc.)
     PieceColor_t color; // Color of the piece (e.g., white or black)
